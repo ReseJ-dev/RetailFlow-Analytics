@@ -1,0 +1,120 @@
+orders:
+  order_id:
+    - Order Number
+    - Order No
+    - Order Reference
+  order_date:
+    - Date
+    - Order Date
+    - Transaction Date
+  customer_id:
+    - Customer Code
+    - Client ID
+  product_id:
+    - Product Code
+    - SKU
+    - Article
+  quantity:
+    - Qty
+    - Units
+  unit_price:
+    - Price
+    - Sales Price
+    - Selling Price
+  discount:
+    - Discount Rate
+    - Discount Percent
+  currency:
+    - Currency Code
+  country:
+    - Market
+    - Customer Country
+  sales_channel:
+    - Channel
+    - Sales Source
+  order_status:
+    - Status
+
+products:
+  product_id:
+    - Product Code
+    - SKU
+    - Article
+  product_name:
+    - Product
+    - Product Description
+    - Article Name
+  category:
+    - Product Category
+  supplier:
+    - Supplier Name
+    - Vendor
+  purchase_cost:
+    - Cost
+    - Unit Cost
+    - Purchase Price
+  recommended_price:
+    - RRP
+    - Retail Price
+    - Recommended Retail Price
+  vat_rate:
+    - VAT
+    - Tax Rate
+
+inventory:
+  product_id:
+    - Product Code
+    - SKU
+    - Article
+  warehouse:
+    - Warehouse Name
+    - Location
+  stock_quantity:
+    - Stock
+    - On Hand
+    - Quantity On Hand
+  reserved_quantity:
+    - Reserved
+    - Allocated Quantity
+  reorder_level:
+    - Reorder Point
+    - Minimum Stock
+  last_restock_date:
+    - Last Restock
+    - Replenishment Date
+
+returns:
+  return_id:
+    - Return Number
+    - RMA
+  order_id:
+    - Order Number
+    - Order Reference
+  product_id:
+    - Product Code
+    - SKU
+    - Article
+  return_date:
+    - Date
+    - Returned On
+  quantity:
+    - Qty
+    - Returned Quantity
+  return_reason:
+    - Reason
+  refund_amount:
+    - Refund
+    - Refunded Value
+
+monthly_targets:
+  month:
+    - Period
+    - Target Month
+  revenue_target:
+    - Sales Target
+    - Revenue Goal
+  profit_target:
+    - Profit Goal
+  orders_target:
+    - Order Target
+    - Volume Target
