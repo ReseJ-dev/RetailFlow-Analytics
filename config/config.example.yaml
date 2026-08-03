@@ -1,2 +1,24 @@
-# RetailFlow Analytics example configuration.
-# Application settings will be documented as they are introduced.
+report:
+  company_name: "Northstar Retail Group"
+  default_currency: "EUR"
+  date_format: "%d/%m/%Y"
+  include_raw_data: false
+  include_quality_report: true
+  include_inventory_analysis: true
+  include_returns_analysis: true
+  include_recommendations: true
+
+inventory:
+  critical_coverage_days: 7
+  low_coverage_days: 21
+  overstock_coverage_days: 90
+  dead_stock_days: 180
+
+validation:
+  duplicate_strategy: "keep_first"
+  allow_unknown_products: false
+  exclude_invalid_rows: true
+
+output:
+  output_directory: "output"
+  filename_pattern: "retailflow_report_{timestamp}.xlsx"

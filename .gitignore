@@ -29,6 +29,8 @@ dist/
 *.db
 output/*
 !output/.gitkeep
+demo_data/*
+!demo_data/.gitkeep
 
 # Logs and temporary uploads
 *.log
