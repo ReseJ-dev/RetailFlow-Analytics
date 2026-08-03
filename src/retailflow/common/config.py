@@ -59,9 +59,14 @@ class ValidationSettings(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    duplicate_strategy: Literal["keep_first", "keep_last", "remove_all", "error"] = (
-        "keep_first"
-    )
+    duplicate_strategy: Literal[
+        "keep_first",
+        "keep_latest",
+        "exclude_all",
+        "error",
+        "keep_last",
+        "remove_all",
+    ] = "keep_first"
     allow_unknown_products: bool = False
     exclude_invalid_rows: bool = True
 
