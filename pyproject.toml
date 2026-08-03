@@ -62,6 +62,10 @@ warn_unreachable = true
 module = ["streamlit", "streamlit.*"]
 ignore_missing_imports = true
 
+[[tool.mypy.overrides]]
+module = ["xlsxwriter", "xlsxwriter.*"]
+ignore_missing_imports = true
+
 [tool.pytest.ini_options]
 minversion = "8.0"
 addopts = "--strict-config --strict-markers --cov=retailflow --cov-report=term-missing"
