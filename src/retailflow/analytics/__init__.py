@@ -5,6 +5,12 @@ from retailflow.analytics.comparisons import (
     compare_periods,
     compare_values,
 )
+from retailflow.analytics.inventory_metrics import (
+    InventoryAnalyticsThresholds,
+    InventoryStatus,
+    analyze_inventory,
+    calculate_inventory_metrics,
+)
 from retailflow.analytics.models import (
     AnalyticsFilters,
     MetricComparison,
@@ -13,6 +19,13 @@ from retailflow.analytics.models import (
     ReturnsKPIs,
     SalesAnalyticsResult,
     SalesKPIs,
+)
+from retailflow.analytics.recommendations import (
+    Recommendation,
+    RecommendationSeverity,
+    RecommendationType,
+    generate_recommendations,
+    recommendations_to_dataframe,
 )
 from retailflow.analytics.returns_metrics import (
     calculate_products_by_return_rate,
@@ -43,16 +56,22 @@ from retailflow.analytics.sales_metrics import (
 
 __all__ = [
     "AnalyticsFilters",
+    "InventoryAnalyticsThresholds",
+    "InventoryStatus",
     "MetricComparison",
     "PeriodComparison",
     "ReturnsAnalyticsResult",
     "ReturnsKPIs",
+    "Recommendation",
+    "RecommendationSeverity",
+    "RecommendationType",
     "SalesAnalyticsResult",
     "SalesKPIs",
     "calculate_category_performance",
     "calculate_channel_performance",
     "calculate_country_performance",
     "calculate_daily_revenue",
+    "calculate_inventory_metrics",
     "calculate_products_by_return_rate",
     "calculate_return_reasons",
     "calculate_returns_analytics",
@@ -60,6 +79,7 @@ __all__ = [
     "calculate_sales_analytics",
     "calculate_sales_metrics",
     "calculate_weekly_revenue",
+    "analyze_inventory",
     "category_performance",
     "channel_performance",
     "compare_kpis",
@@ -68,9 +88,11 @@ __all__ = [
     "country_performance",
     "daily_revenue",
     "filter_orders",
+    "generate_recommendations",
     "prepare_sales_data",
     "products_by_return_rate",
     "return_reasons",
+    "recommendations_to_dataframe",
     "top_products_by_gross_profit",
     "top_products_by_revenue",
     "weekly_revenue",
