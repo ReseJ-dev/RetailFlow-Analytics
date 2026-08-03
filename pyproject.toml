@@ -1,0 +1,69 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "retailflow-analytics"
+version = "0.1.0"
+description = "Sales, product, inventory, returns, and target analytics tooling."
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+license = { file = "LICENSE" }
+authors = [{ name = "RetailFlow Analytics contributors" }]
+dependencies = [
+    "openpyxl",
+    "pandas",
+    "plotly",
+    "pydantic",
+    "pydantic-settings",
+    "PyYAML",
+    "requests",
+    "sqlalchemy",
+    "streamlit",
+    "typer",
+    "xlsxwriter",
+]
+
+[project.optional-dependencies]
+dev = [
+    "mypy",
+    "pandas-stubs",
+    "pytest",
+    "pytest-cov",
+    "ruff",
+    "types-PyYAML",
+    "types-requests",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+src = ["src", "app", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "ANN"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = ["ANN"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+files = ["src", "app"]
+mypy_path = "src"
+pretty = true
+show_error_codes = true
+warn_unreachable = true
+
+[[tool.mypy.overrides]]
+module = ["streamlit", "streamlit.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+addopts = "--strict-config --strict-markers --cov=retailflow --cov-report=term-missing"
+testpaths = ["tests"]
+pythonpath = ["src"]

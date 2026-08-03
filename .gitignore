@@ -1,0 +1,46 @@
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Python caches and build artifacts
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+build/
+dist/
+
+# Environment and secret files
+.env
+.env.*
+!.env.example
+.streamlit/secrets.toml
+
+# Generated reports and local databases
+*.xlsx
+*.xls
+*.sqlite
+*.sqlite3
+*.db
+output/*
+!output/.gitkeep
+
+# Logs and temporary uploads
+*.log
+logs/
+tmp/
+temp/
+uploads/
+*.upload
+
+# IDE and operating-system configuration
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
