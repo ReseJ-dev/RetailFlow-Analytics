@@ -1,1 +1,77 @@
-"""Sales and inventory analytics package."""
+"""Sales and returns analytics interfaces."""
+
+from retailflow.analytics.comparisons import (
+    compare_kpis,
+    compare_periods,
+    compare_values,
+)
+from retailflow.analytics.models import (
+    AnalyticsFilters,
+    MetricComparison,
+    PeriodComparison,
+    ReturnsAnalyticsResult,
+    ReturnsKPIs,
+    SalesAnalyticsResult,
+    SalesKPIs,
+)
+from retailflow.analytics.returns_metrics import (
+    calculate_products_by_return_rate,
+    calculate_return_reasons,
+    calculate_returns_analytics,
+    calculate_returns_metrics,
+    products_by_return_rate,
+    return_reasons,
+)
+from retailflow.analytics.sales_metrics import (
+    calculate_category_performance,
+    calculate_channel_performance,
+    calculate_country_performance,
+    calculate_daily_revenue,
+    calculate_sales_analytics,
+    calculate_sales_metrics,
+    calculate_weekly_revenue,
+    category_performance,
+    channel_performance,
+    country_performance,
+    daily_revenue,
+    filter_orders,
+    prepare_sales_data,
+    top_products_by_gross_profit,
+    top_products_by_revenue,
+    weekly_revenue,
+)
+
+__all__ = [
+    "AnalyticsFilters",
+    "MetricComparison",
+    "PeriodComparison",
+    "ReturnsAnalyticsResult",
+    "ReturnsKPIs",
+    "SalesAnalyticsResult",
+    "SalesKPIs",
+    "calculate_category_performance",
+    "calculate_channel_performance",
+    "calculate_country_performance",
+    "calculate_daily_revenue",
+    "calculate_products_by_return_rate",
+    "calculate_return_reasons",
+    "calculate_returns_analytics",
+    "calculate_returns_metrics",
+    "calculate_sales_analytics",
+    "calculate_sales_metrics",
+    "calculate_weekly_revenue",
+    "category_performance",
+    "channel_performance",
+    "compare_kpis",
+    "compare_periods",
+    "compare_values",
+    "country_performance",
+    "daily_revenue",
+    "filter_orders",
+    "prepare_sales_data",
+    "products_by_return_rate",
+    "return_reasons",
+    "top_products_by_gross_profit",
+    "top_products_by_revenue",
+    "weekly_revenue",
+]
