@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
 
@@ -58,6 +59,8 @@ CHANNEL_ALIASES = {
     "store": "retail",
     "wholesale": "wholesale",
 }
+ISO_DATE_PREFIX = re.compile(r"^\d{4}-\d{2}-\d{2}(?:$|[T ])")
+SLASH_DATE = re.compile(r"^\d{1,2}/\d{1,2}/\d{4}$")
 
 
 def is_missing(value: object) -> bool:
@@ -161,7 +164,13 @@ def parse_date(value: object, *, month_first: bool = False) -> pd.Timestamp | No
     if not text:
         return None
     try:
-        parsed = pd.to_datetime(text, dayfirst=not month_first, errors="raise")
+        if ISO_DATE_PREFIX.match(text):
+            parsed = pd.Timestamp(text)
+        elif SLASH_DATE.match(text):
+            date_format = "%m/%d/%Y" if month_first else "%d/%m/%Y"
+            parsed = pd.Timestamp(datetime.strptime(text, date_format))
+        else:
+            parsed = pd.to_datetime(text, dayfirst=not month_first, errors="raise")
     except (ValueError, TypeError, OverflowError):
         return None
     return pd.Timestamp(parsed).normalize()

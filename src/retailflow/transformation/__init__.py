@@ -11,6 +11,13 @@ from retailflow.transformation.currency_converter import (
     CurrencyConverter,
     UnsupportedCurrencyError,
 )
+from retailflow.transformation.merger import (
+    merge_inventory_with_products,
+    merge_orders_with_products,
+    merge_orders_with_targets,
+    merge_returns_with_orders_and_products,
+    safe_many_to_one_merge,
+)
 from retailflow.transformation.normalizer import (
     normalize_country,
     normalize_currency,
@@ -31,6 +38,10 @@ __all__ = [
     "TransformationStatistics",
     "UnsupportedCurrencyError",
     "clean_dataset",
+    "merge_inventory_with_products",
+    "merge_orders_with_products",
+    "merge_orders_with_targets",
+    "merge_returns_with_orders_and_products",
     "normalize_country",
     "normalize_currency",
     "normalize_identifier",
@@ -40,4 +51,5 @@ __all__ = [
     "parse_date",
     "parse_integer",
     "parse_number",
+    "safe_many_to_one_merge",
 ]
