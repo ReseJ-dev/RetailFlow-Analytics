@@ -4,7 +4,6 @@ from datetime import datetime
 
 import streamlit as st
 
-from app.components.status_badge import render_status_badge
 from app.state import ApplicationStatus
 
 
@@ -12,6 +11,31 @@ def _display_datetime(value: object) -> str:
     if isinstance(value, datetime):
         return value.astimezone().strftime("%Y-%m-%d %H:%M")
     return str(value) if value else "No successful runs yet"
+
+
+def _display_status(value: ApplicationStatus | str) -> str:
+    try:
+        return ApplicationStatus(value).value
+    except ValueError:
+        return ApplicationStatus.FAILED.value
+
+
+def render_page_context(
+    *,
+    reporting_period: object = None,
+    last_successful_run: object = None,
+    status: ApplicationStatus | str | None = None,
+) -> None:
+    """Render optional workflow context in one compact, readable line."""
+    context: list[str] = []
+    if reporting_period:
+        context.append(f"Period: {reporting_period}")
+    if last_successful_run:
+        context.append(f"Last run: {_display_datetime(last_successful_run)}")
+    if status is not None:
+        context.append(f"Status: {_display_status(status)}")
+    if context:
+        st.caption("  ·  ".join(context))
 
 
 def render_page_header(
@@ -22,17 +46,12 @@ def render_page_header(
     last_successful_run: object,
     status: ApplicationStatus | str,
 ) -> None:
-    """Render consistent product identity and workflow context for every page."""
-    st.caption("RETAILFLOW ANALYTICS")
+    """Render a compact title, description, and optional workflow context."""
+    st.caption(f"RetailFlow / {page_title}")
     st.title(page_title)
     st.write(description)
-    period_column, run_column, status_column = st.columns(3)
-    with period_column:
-        st.caption("SELECTED REPORTING PERIOD")
-        st.write(str(reporting_period) if reporting_period else "Not selected")
-    with run_column:
-        st.caption("LAST SUCCESSFUL RUN")
-        st.write(_display_datetime(last_successful_run))
-    with status_column:
-        st.caption("CURRENT STATUS")
-        render_status_badge(status)
+    render_page_context(
+        reporting_period=reporting_period,
+        last_successful_run=last_successful_run,
+        status=status,
+    )

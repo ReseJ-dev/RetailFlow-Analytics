@@ -1,4 +1,4 @@
-"""Central navigation, CSS loading, and placeholder layout."""
+"""Branded application shell, central navigation, and placeholder layout."""
 
 from dataclasses import dataclass
 from pathlib import Path
@@ -7,10 +7,19 @@ import streamlit as st
 
 from app.components.empty_state import render_empty_state
 from app.components.header import render_page_header
-from app.state import AppPage, SessionState, StateKey, navigate_to
+from app.state import AppPage, SessionState, StateKey, initialize_state, navigate_to
 from app.styles.theme import apply_global_theme
 
-NAVIGATION_WIDGET_KEY = "_retailflow_navigation"
+_BRAND_MARKUP = """
+<div class="rf-brand" aria-label="RetailFlow Analytics">
+  <span class="rf-brand-mark" aria-hidden="true"><span></span></span>
+  <span class="rf-brand-copy">
+    <strong>RetailFlow</strong>
+    <span>Analytics</span>
+  </span>
+</div>
+<p class="rf-brand-caption">Management reporting workspace</p>
+"""
 
 
 @dataclass(frozen=True, slots=True)
@@ -23,30 +32,54 @@ class NavigationItem:
     implemented: bool = False
 
 
-NAVIGATION_ITEMS = (
-    NavigationItem(AppPage.OVERVIEW, "⌂", "Start a report and review recent activity.", True),
-    NavigationItem(AppPage.UPLOAD_DATA, "↑", "Upload and map source datasets.", True),
+PRIMARY_NAVIGATION_ITEMS = (
+    NavigationItem(
+        AppPage.OVERVIEW,
+        ":material/home:",
+        "Start a report and review recent activity.",
+        True,
+    ),
+    NavigationItem(
+        AppPage.UPLOAD_DATA,
+        ":material/upload_file:",
+        "Upload and map source datasets.",
+        True,
+    ),
     NavigationItem(
         AppPage.DATA_QUALITY,
-        "✓",
+        ":material/fact_check:",
         "Review validation results and exclusions.",
         True,
     ),
     NavigationItem(
         AppPage.DASHBOARD,
-        "▦",
+        ":material/space_dashboard:",
         "Explore sales, returns, and inventory analytics.",
         True,
     ),
     NavigationItem(
         AppPage.GENERATE_REPORT,
-        "↓",
+        ":material/description:",
         "Configure and create an Excel report.",
         True,
     ),
-    NavigationItem(AppPage.RUN_HISTORY, "◷", "Review previous processing runs.", True),
-    NavigationItem(AppPage.SETTINGS, "⚙", "Manage report and validation preferences."),
+    NavigationItem(
+        AppPage.RUN_HISTORY,
+        ":material/history:",
+        "Review previous processing runs.",
+        True,
+    ),
 )
+
+SECONDARY_NAVIGATION_ITEMS = (
+    NavigationItem(
+        AppPage.SETTINGS,
+        ":material/settings:",
+        "Manage report and validation preferences.",
+    ),
+)
+
+NAVIGATION_ITEMS = PRIMARY_NAVIGATION_ITEMS + SECONDARY_NAVIGATION_ITEMS
 
 
 def load_local_css(css_path: Path) -> None:
@@ -54,30 +87,54 @@ def load_local_css(css_path: Path) -> None:
     apply_global_theme(css_path)
 
 
-def render_navigation(state: SessionState) -> AppPage:
-    """Render the single navigation registry and synchronize the selected page."""
-    labels = [item.page.value for item in NAVIGATION_ITEMS]
+def render_navigation_item(
+    state: SessionState,
+    item: NavigationItem,
+    *,
+    current_page: AppPage,
+) -> None:
+    """Render one dependency-free icon button backed by canonical page state."""
+    st.button(
+        item.page.value,
+        key=f"navigation_{item.page.name.casefold()}",
+        help=item.description,
+        on_click=navigate_to,
+        args=(state, item.page),
+        type="primary" if item.page is current_page else "tertiary",
+        icon=item.icon,
+        width="stretch",
+    )
+
+
+def render_sidebar(state: SessionState) -> None:
+    """Render product branding and the only visible application navigation."""
     current = AppPage(state[StateKey.CURRENT_PAGE.value])
-    if NAVIGATION_WIDGET_KEY not in state:
-        state[NAVIGATION_WIDGET_KEY] = current.value
     with st.sidebar:
-        st.markdown("## RetailFlow Analytics")
-        st.caption("Management reporting workspace")
-        selected = st.radio(
-            "Navigation",
-            labels,
-            key=NAVIGATION_WIDGET_KEY,
-            label_visibility="collapsed",
-        )
-    page = AppPage(selected)
-    navigate_to(state, page)
-    return page
+        st.markdown(_BRAND_MARKUP, unsafe_allow_html=True)
+        st.caption("WORKSPACE")
+        for item in PRIMARY_NAVIGATION_ITEMS:
+            render_navigation_item(state, item, current_page=current)
+        st.divider()
+        st.caption("PREFERENCES")
+        for item in SECONDARY_NAVIGATION_ITEMS:
+            render_navigation_item(state, item, current_page=current)
+
+
+def render_app_shell(state: SessionState) -> AppPage:
+    """Render the shared sidebar and return the canonical active page."""
+    initialize_state(state)
+    render_sidebar(state)
+    return AppPage(state[StateKey.CURRENT_PAGE.value])
+
+
+def render_navigation(state: SessionState) -> AppPage:
+    """Compatibility wrapper for the previous shell entry point."""
+    return render_app_shell(state)
 
 
 def navigate_and_rerun(state: SessionState, page: AppPage) -> None:
-    """Navigate from a page action and synchronize the sidebar widget."""
+    """Navigate from an in-page workflow action and rerun the active script."""
     navigate_to(state, page)
-    state[NAVIGATION_WIDGET_KEY] = page.value
     st.rerun()
 
 

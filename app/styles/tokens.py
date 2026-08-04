@@ -17,6 +17,7 @@ class ColourTokens:
     border: str = "#E4E7EC"
     primary: str = "#4F46E5"
     primary_hover: str = "#4338CA"
+    primary_tint: str = "#EEF2FF"
     success: str = "#16A34A"
     warning: str = "#D97706"
     error: str = "#DC2626"

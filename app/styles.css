@@ -344,3 +344,111 @@ summary:focus-visible,
     transition: none;
   }
 }
+
+/* Application shell -------------------------------------------------------- */
+
+[data-testid="stSidebar"] {
+  background: var(--rf-color-surface-background);
+}
+
+.rf-brand {
+  display: flex;
+  align-items: center;
+  gap: var(--rf-layout-space-3);
+  margin: var(--rf-layout-space-2) 0 0;
+}
+
+.rf-brand-mark {
+  position: relative;
+  display: inline-flex;
+  width: 2.25rem;
+  height: 2.25rem;
+  flex: 0 0 2.25rem;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: var(--rf-layout-control-radius);
+  background: var(--rf-color-primary);
+}
+
+.rf-brand-mark::before,
+.rf-brand-mark::after,
+.rf-brand-mark span {
+  position: absolute;
+  width: 0.32rem;
+  border-radius: 0.2rem;
+  background: var(--rf-color-surface-background);
+  content: "";
+}
+
+.rf-brand-mark::before {
+  height: 0.75rem;
+  transform: translate(-0.55rem, 0.35rem);
+}
+
+.rf-brand-mark span {
+  height: 1.15rem;
+}
+
+.rf-brand-mark::after {
+  height: 1.55rem;
+  transform: translate(0.55rem, -0.2rem);
+}
+
+.rf-brand-copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  line-height: 1.1;
+}
+
+.rf-brand-copy strong {
+  color: var(--rf-color-primary-text);
+  font-size: 1.05rem;
+  letter-spacing: -0.015em;
+}
+
+.rf-brand-copy > span {
+  margin-top: var(--rf-layout-space-1);
+  color: var(--rf-color-secondary-text);
+  font-size: var(--rf-type-supporting-size);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.rf-brand-caption {
+  margin: var(--rf-layout-space-2) 0 var(--rf-layout-space-6);
+  color: var(--rf-color-secondary-text);
+  font-size: var(--rf-type-supporting-size);
+}
+
+[data-testid="stSidebar"] [data-testid="stButton"] button {
+  justify-content: flex-start;
+  border-color: transparent;
+  box-shadow: none;
+  text-align: left;
+}
+
+[data-testid="stSidebar"] [data-testid="stButton"] button[kind="tertiary"] {
+  background: transparent;
+  color: var(--rf-color-secondary-text);
+}
+
+[data-testid="stSidebar"] [data-testid="stButton"] button[kind="tertiary"]:hover {
+  border-color: var(--rf-color-border);
+  background: var(--rf-color-disabled-background);
+  color: var(--rf-color-primary-text);
+}
+
+[data-testid="stSidebar"] [data-testid="stButton"] button[kind="primary"] {
+  border-color: var(--rf-color-focus-ring);
+  background: var(--rf-color-primary-tint);
+  color: var(--rf-color-primary-hover);
+}
+
+[data-testid="stSidebar"] [data-testid="stButton"] button[kind="primary"]:hover {
+  border-color: var(--rf-color-primary);
+  background: var(--rf-color-primary-tint);
+  color: var(--rf-color-primary-hover);
+}

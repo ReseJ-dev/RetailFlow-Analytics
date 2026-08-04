@@ -7,7 +7,7 @@ from pathlib import Path
 
 import streamlit as st
 
-from app.components.layout import load_local_css, render_navigation, render_placeholder
+from app.components.layout import load_local_css, render_app_shell, render_placeholder
 from app.pages.dashboard import render_dashboard
 from app.pages.data_quality import render_data_quality
 from app.pages.generate_report import render_generate_report
@@ -26,7 +26,7 @@ _USER_ERROR_MESSAGE = (
 def _render_application() -> None:
     """Render the selected destination while keeping unfinished workflows graceful."""
     initialize_state(st.session_state)
-    page = render_navigation(st.session_state)
+    page = render_app_shell(st.session_state)
     if page is AppPage.OVERVIEW:
         render_overview(st.session_state)
     elif page is AppPage.UPLOAD_DATA:
@@ -47,7 +47,7 @@ def main() -> None:
     """Configure and safely render the RetailFlow Streamlit application."""
     st.set_page_config(
         page_title="RetailFlow Analytics",
-        page_icon="📊",
+        page_icon=":material/analytics:",
         layout="wide",
         initial_sidebar_state="expanded",
     )

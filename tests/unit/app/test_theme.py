@@ -89,7 +89,7 @@ def test_theme_injection_writes_one_trusted_style_block(monkeypatch) -> None:
     assert calls[0][1] is True
 
 
-def test_streamlit_theme_uses_tokens_without_changing_client_chrome() -> None:
+def test_streamlit_theme_uses_tokens_and_supported_shell_configuration() -> None:
     with (PROJECT_ROOT / ".streamlit" / "config.toml").open("rb") as config_file:
         config = tomllib.load(config_file)
 
@@ -101,7 +101,11 @@ def test_streamlit_theme_uses_tokens_without_changing_client_chrome() -> None:
     assert theme["secondaryBackgroundColor"] == colours.surface_background
     assert theme["textColor"] == colours.primary_text
     assert theme["borderColor"] == colours.border
-    assert "client" not in config
+    assert config["client"] == {
+        "showSidebarNavigation": False,
+        "toolbarMode": "viewer",
+        "showErrorLinks": False,
+    }
 
 
 def test_text_and_semantic_surface_pairs_meet_wcag_aa_contrast() -> None:
