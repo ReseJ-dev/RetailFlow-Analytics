@@ -23,7 +23,7 @@ type-check: typecheck
 check: lint typecheck test
 
 run:
-	python -m streamlit run app/main.py
+	PYTHONPATH=src:. python -m streamlit run app/main.py
 
 demo-data:
 	python -m retailflow generate-demo-data --output-directory demo_data

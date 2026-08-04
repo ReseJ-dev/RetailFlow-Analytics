@@ -60,7 +60,7 @@ python -m retailflow generate-demo-data \
   --output-directory demo_data \
   --random-seed 42 \
   --exclude-invalid-rows
-python -m streamlit run app/main.py
+make run
 ```
 
 Open <http://localhost:8501>, then follow **Upload Data → Data Quality → Dashboard →
@@ -144,7 +144,7 @@ python -m pip install -e ".[dev]"
 python -m retailflow generate-demo-data \
   --output-directory demo_data \
   --exclude-invalid-rows
-python -m streamlit run app/main.py
+make run
 ```
 
 In another terminal, a complete CLI report can be generated from the same files:
