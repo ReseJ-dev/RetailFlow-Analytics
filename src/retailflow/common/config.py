@@ -91,15 +91,23 @@ class StorageSettings(BaseModel):
 
 
 class SourceSettings(BaseModel):
-    """Optional filesystem sources used by non-interactive CLI runs."""
+    """Explicit file or API source selection used by non-interactive runs."""
 
     model_config = ConfigDict(extra="forbid")
 
+    mode: Literal["files", "api"] = "files"
     orders: Path | None = None
     products: Path | None = None
     inventory: Path | None = None
     returns: Path | None = None
     targets: Path | None = None
+    api_url: str | None = None
+    api_connect_timeout: float = Field(default=3.0, gt=0)
+    api_read_timeout: float = Field(default=20.0, gt=0)
+    api_retry_count: int = Field(default=3, ge=0)
+    api_backoff_factor: float = Field(default=0.5, ge=0)
+    api_page_size: int = Field(default=100, ge=1, le=500)
+    allow_mixed_sources: bool = False
 
 
 class RetailFlowSettings(BaseSettings):

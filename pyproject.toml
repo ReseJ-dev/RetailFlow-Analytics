@@ -11,6 +11,7 @@ requires-python = ">=3.12,<3.13"
 license = { file = "LICENSE" }
 authors = [{ name = "RetailFlow Analytics contributors" }]
 dependencies = [
+    "fastapi",
     "openpyxl",
     "pandas",
     "plotly",
@@ -21,6 +22,7 @@ dependencies = [
     "sqlalchemy",
     "streamlit",
     "typer",
+    "uvicorn",
     "xlsxwriter",
 ]
 
@@ -29,6 +31,7 @@ retailflow = "retailflow.cli:app"
 
 [project.optional-dependencies]
 dev = [
+    "httpx",
     "mypy",
     "pandas-stubs",
     "pytest",
@@ -73,4 +76,4 @@ ignore_missing_imports = true
 minversion = "8.0"
 addopts = "--strict-config --strict-markers --cov=retailflow --cov-report=term-missing"
 testpaths = ["tests"]
-pythonpath = ["src"]
+pythonpath = ["src", "."]

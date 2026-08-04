@@ -118,3 +118,41 @@ def test_show_config_does_not_print_database_credentials(
 
     assert result.exit_code == ExitCode.SUCCESS
     assert database_url not in result.output
+
+
+def test_api_mode_rejects_accidental_file_mixing(tmp_path: Path) -> None:
+    config = tmp_path / "api.yaml"
+    config.write_text(
+        "sources:\n  mode: api\n  api_url: http://127.0.0.1:8000\n",
+        encoding="utf-8",
+    )
+
+    result = runner.invoke(
+        app,
+        [
+            "validate",
+            "--config",
+            str(config),
+            "--orders",
+            str(tmp_path / "orders.csv"),
+        ],
+    )
+
+    assert result.exit_code == ExitCode.CONFIGURATION_ERROR
+    assert "cannot be combined with file sources" in result.output
+
+
+def test_api_mode_requires_environment_token(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    config = tmp_path / "api.yaml"
+    config.write_text(
+        "sources:\n  mode: api\n  api_url: http://127.0.0.1:8000\n",
+        encoding="utf-8",
+    )
+    monkeypatch.delenv("RETAIL_API_TOKEN", raising=False)
+
+    result = runner.invoke(app, ["validate", "--config", str(config)])
+
+    assert result.exit_code == ExitCode.CONFIGURATION_ERROR
+    assert "RETAIL_API_TOKEN" in result.output

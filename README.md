@@ -36,3 +36,23 @@ To start the placeholder Streamlit application:
 ```bash
 make run
 ```
+
+## Demonstration REST API
+
+The local mock source uses bearer authentication and serves paginated orders,
+products, inventory, and returns. Copy `.env.example` to `.env` for the documented
+local-only demo token, export the two variables, and start the ASGI server:
+
+```bash
+set -a
+source .env
+set +a
+uvicorn mock_api.main:app --reload
+```
+
+Open Upload Data in Streamlit to test the connection or load the API datasets.
+For CLI API mode, use a YAML file with `sources.mode: api` and `sources.api_url`
+set, then run `python -m retailflow validate --config config/api.yaml`. The token
+must come from `RETAIL_API_TOKEN`; it is never written to YAML, SQLite, or logs.
+File and API sources cannot be combined unless `sources.allow_mixed_sources` is
+explicitly enabled.

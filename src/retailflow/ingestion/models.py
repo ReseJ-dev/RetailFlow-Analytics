@@ -15,7 +15,7 @@ class FileMetadata(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     filename: str
-    file_type: Literal["csv", "xlsx"]
+    file_type: Literal["csv", "xlsx", "api"]
     file_size: int = Field(ge=0)
     row_count: int = Field(ge=0)
     column_count: int = Field(ge=1)
@@ -44,7 +44,7 @@ class LoadedDataset(BaseModel):
         return self.metadata.filename
 
     @property
-    def file_type(self) -> Literal["csv", "xlsx"]:
+    def file_type(self) -> Literal["csv", "xlsx", "api"]:
         """Return the detected file type."""
         return self.metadata.file_type
 

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import os
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from datetime import UTC, date, datetime
@@ -31,7 +32,7 @@ from retailflow.common.exceptions import (
     ReportGenerationError,
     RetailFlowError,
 )
-from retailflow.ingestion import LoadedDataset, load_file
+from retailflow.ingestion import LoadedDataset, RetailApiClient, load_file
 from retailflow.models import ProcessingProgress, ProcessingResult
 from retailflow.pipeline import DataProcessingPipeline
 from retailflow.reporting.excel_report import ExcelReportGenerator, ReportGenerationResult
@@ -179,6 +180,71 @@ def load_source_datasets(paths: SourcePaths) -> dict[DatasetType, LoadedDataset]
         if not path.is_file():
             raise DataSourceError(f"The source file '{path}' does not exist or is not readable.")
     return {dataset_type: load_file(path) for dataset_type, path in path_mapping.items()}
+
+
+def load_configured_datasets(
+    settings: RetailFlowSettings,
+    *,
+    orders: Path | None,
+    products: Path | None,
+    inventory: Path | None,
+    returns: Path | None,
+    targets: Path | None,
+) -> dict[DatasetType, LoadedDataset]:
+    """Load exactly the configured source mode, rejecting accidental file/API mixing."""
+    if settings.sources.mode == "files":
+        return load_source_datasets(
+            resolve_source_paths(
+                settings,
+                orders=orders,
+                products=products,
+                inventory=inventory,
+                returns=returns,
+                targets=targets,
+            )
+        )
+
+    configured_files: dict[DatasetType, Path | None] = {
+        DatasetType.ORDERS: orders or settings.sources.orders,
+        DatasetType.PRODUCTS: products or settings.sources.products,
+        DatasetType.INVENTORY: inventory or settings.sources.inventory,
+        DatasetType.RETURNS: returns or settings.sources.returns,
+    }
+    target_path = targets or settings.sources.targets
+    has_files = (
+        any(path is not None for path in configured_files.values())
+        or target_path is not None
+    )
+    if has_files and not settings.sources.allow_mixed_sources:
+        raise ConfigurationError(
+            "API mode cannot be combined with file sources unless "
+            "sources.allow_mixed_sources is explicitly enabled."
+        )
+    api_url = os.getenv("RETAIL_API_URL") or settings.sources.api_url
+    api_token = os.getenv("RETAIL_API_TOKEN")
+    if not api_url:
+        raise ConfigurationError(
+            "API mode requires RETAIL_API_URL or sources.api_url configuration."
+        )
+    if not api_token:
+        raise ConfigurationError("API mode requires the RETAIL_API_TOKEN environment variable.")
+    with RetailApiClient(
+        api_url,
+        api_token,
+        connect_timeout=settings.sources.api_connect_timeout,
+        read_timeout=settings.sources.api_read_timeout,
+        retry_count=settings.sources.api_retry_count,
+        backoff_factor=settings.sources.api_backoff_factor,
+        page_size=settings.sources.api_page_size,
+    ) as client:
+        datasets = client.load_all()
+    if settings.sources.allow_mixed_sources:
+        for dataset_type, path in configured_files.items():
+            if path is not None:
+                datasets[dataset_type] = load_file(path)
+        if target_path is not None:
+            datasets[DatasetType.MONTHLY_TARGETS] = load_file(target_path)
+    return datasets
 
 
 def process_loaded_datasets(
@@ -557,6 +623,7 @@ __all__ = [
     "exception_exit_code",
     "generate_report",
     "load_source_datasets",
+    "load_configured_datasets",
     "parse_reporting_period",
     "process_loaded_datasets",
     "resolve_report_destination",

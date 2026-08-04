@@ -24,7 +24,7 @@ class NavigationItem:
 
 NAVIGATION_ITEMS = (
     NavigationItem(AppPage.OVERVIEW, "⌂", "Start a report and review recent activity.", True),
-    NavigationItem(AppPage.UPLOAD_DATA, "↑", "Upload and map source datasets."),
+    NavigationItem(AppPage.UPLOAD_DATA, "↑", "Upload and map source datasets.", True),
     NavigationItem(
         AppPage.DATA_QUALITY,
         "✓",

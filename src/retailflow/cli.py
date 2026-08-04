@@ -13,15 +13,13 @@ import yaml
 from retailflow import __version__
 from retailflow.cli_helpers import (
     CliValidationError,
-    SourcePaths,
     calculate_analytics,
     ensure_generation_allowed,
     exception_exit_code,
     generate_report,
-    load_source_datasets,
+    load_configured_datasets,
     parse_reporting_period,
     process_loaded_datasets,
-    resolve_source_paths,
     validation_summary,
     write_validation_report,
 )
@@ -78,24 +76,6 @@ def _fail(error: BaseException, *, debug: bool) -> None:
     raise typer.Exit(code=int(code))
 
 
-def _sources(
-    settings: RetailFlowSettings,
-    orders: Path | None,
-    products: Path | None,
-    inventory: Path | None,
-    returns: Path | None,
-    targets: Path | None,
-) -> SourcePaths:
-    return resolve_source_paths(
-        settings,
-        orders=orders,
-        products=products,
-        inventory=inventory,
-        returns=returns,
-        targets=targets,
-    )
-
-
 @app.command("generate")
 def generate_command(
     orders: Annotated[Path | None, typer.Option("--orders", help="Orders CSV/XLSX.")] = None,
@@ -137,9 +117,14 @@ def generate_command(
     """Validate, analyse, persist, and generate an Excel management report."""
     try:
         settings = _settings(config, currency)
-        _stage("Loading source files")
-        datasets = load_source_datasets(
-            _sources(settings, orders, products, inventory, returns, targets)
+        _stage("Loading configured data source")
+        datasets = load_configured_datasets(
+            settings,
+            orders=orders,
+            products=products,
+            inventory=inventory,
+            returns=returns,
+            targets=targets,
         )
         _stage("Running validation and processing pipeline")
         processing = process_loaded_datasets(
@@ -197,9 +182,14 @@ def validate_command(
     """Validate source files without generating the management workbook."""
     try:
         settings = _settings(config)
-        _stage("Loading source files")
-        datasets = load_source_datasets(
-            _sources(settings, orders, products, inventory, returns, targets)
+        _stage("Loading configured data source")
+        datasets = load_configured_datasets(
+            settings,
+            orders=orders,
+            products=products,
+            inventory=inventory,
+            returns=returns,
+            targets=targets,
         )
         _stage("Running validation and processing pipeline")
         processing = process_loaded_datasets(

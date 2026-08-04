@@ -29,8 +29,16 @@ storage:
   create_tables: true
 
 sources:
+  mode: "files"
   orders: "demo_data/orders.csv"
   products: "demo_data/products.xlsx"
   inventory: "demo_data/inventory.csv"
   returns: "demo_data/returns.xlsx"
   targets: "demo_data/monthly_targets.csv"
+  api_url: null
+  api_connect_timeout: 3.0
+  api_read_timeout: 20.0
+  api_retry_count: 3
+  api_backoff_factor: 0.5
+  api_page_size: 100
+  allow_mixed_sources: false

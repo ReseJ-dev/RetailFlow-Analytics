@@ -13,6 +13,7 @@ from app.pages.data_quality import render_data_quality
 from app.pages.generate_report import render_generate_report
 from app.pages.overview import render_overview
 from app.pages.run_history import render_run_history
+from app.pages.upload_data import render_upload_data
 from app.state import AppPage, initialize_state
 
 logger = logging.getLogger("retailflow.app")
@@ -28,6 +29,8 @@ def _render_application() -> None:
     page = render_navigation(st.session_state)
     if page is AppPage.OVERVIEW:
         render_overview(st.session_state)
+    elif page is AppPage.UPLOAD_DATA:
+        render_upload_data(st.session_state)
     elif page is AppPage.DATA_QUALITY:
         render_data_quality(st.session_state)
     elif page is AppPage.DASHBOARD:
