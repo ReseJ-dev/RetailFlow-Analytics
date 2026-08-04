@@ -8,6 +8,7 @@ import streamlit as st
 from app.components.empty_state import render_empty_state
 from app.components.header import render_page_header
 from app.state import AppPage, SessionState, StateKey, navigate_to
+from app.styles.theme import apply_global_theme
 
 NAVIGATION_WIDGET_KEY = "_retailflow_navigation"
 
@@ -49,12 +50,8 @@ NAVIGATION_ITEMS = (
 
 
 def load_local_css(css_path: Path) -> None:
-    """Load trusted application CSS from disk and fail gracefully if unavailable."""
-    try:
-        css = css_path.read_text(encoding="utf-8")
-    except OSError:
-        return
-    st.markdown(f"<style>{css}</style>", unsafe_allow_html=True)
+    """Apply the shared theme while preserving the existing application helper API."""
+    apply_global_theme(css_path)
 
 
 def render_navigation(state: SessionState) -> AppPage:

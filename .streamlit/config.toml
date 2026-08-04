@@ -1,0 +1,33 @@
+[theme]
+base = "light"
+primaryColor = "#4F46E5"
+backgroundColor = "#F6F8FB"
+secondaryBackgroundColor = "#FFFFFF"
+textColor = "#172033"
+linkColor = "#4F46E5"
+linkUnderline = true
+font = "ui-sans-serif, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica, Arial, sans-serif"
+headingFont = "ui-sans-serif, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica, Arial, sans-serif"
+baseFontSize = 16
+baseFontWeight = 400
+headingFontSizes = ["2.25rem", "1.5rem", "1.25rem", "1.125rem", "1rem", "0.875rem"]
+headingFontWeights = [700, 700, 600, 600, 600, 600]
+baseRadius = "0.625rem"
+buttonRadius = "0.5rem"
+borderColor = "#E4E7EC"
+dataframeBorderColor = "#E4E7EC"
+dataframeHeaderBackgroundColor = "#F2F4F7"
+showWidgetBorder = true
+showSidebarBorder = true
+greenColor = "#16A34A"
+orangeColor = "#D97706"
+redColor = "#DC2626"
+blueColor = "#2563EB"
+chartCategoricalColors = [
+  "#4F46E5",
+  "#2563EB",
+  "#16A34A",
+  "#D97706",
+  "#DC2626",
+  "#667085",
+]

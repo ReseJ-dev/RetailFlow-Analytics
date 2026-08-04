@@ -24,6 +24,7 @@ COPY src ./src
 RUN python -m pip install --no-deps .
 
 COPY app ./app
+COPY .streamlit ./.streamlit
 COPY config ./config
 COPY mock_api ./mock_api
 COPY scripts ./scripts
