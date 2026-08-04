@@ -1,0 +1,35 @@
+:root {
+  --retailflow-navy: #17365d;
+  --retailflow-blue: #4472c4;
+  --retailflow-background: #f3f6f8;
+  --retailflow-border: #d9e1e8;
+}
+
+[data-testid="stAppViewContainer"] {
+  background: var(--retailflow-background);
+}
+
+[data-testid="stMainBlockContainer"] {
+  padding-top: 2rem;
+  padding-bottom: 3rem;
+}
+
+h1, h2, h3 {
+  color: var(--retailflow-navy);
+}
+
+[data-testid="stMetric"],
+[data-testid="stVerticalBlockBorderWrapper"] {
+  background: #ffffff;
+  border-radius: 0.6rem;
+}
+
+[data-testid="stMetric"] {
+  border: 1px solid var(--retailflow-border);
+  padding: 1rem;
+}
+
+.stButton > button,
+.stDownloadButton > button {
+  border-radius: 0.45rem;
+}

@@ -1,1 +1,1 @@
-"""Reusable Streamlit components for RetailFlow Analytics."""
+"""Reusable Streamlit presentation components."""

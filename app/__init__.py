@@ -1,1 +1,1 @@
-"""Streamlit application package for RetailFlow Analytics."""
+"""Streamlit user interface for RetailFlow Analytics."""

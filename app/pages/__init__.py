@@ -1,1 +1,1 @@
-"""Streamlit pages for RetailFlow Analytics."""
+"""Streamlit page renderers."""
