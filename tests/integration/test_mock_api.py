@@ -56,6 +56,20 @@ def test_mock_api_requires_bearer_authentication(api: TestClient) -> None:
     assert response.json()["status"] == "ok"
 
 
+def test_empty_container_token_configuration_uses_documented_demo_token(
+    api: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("RETAIL_API_TOKEN", "")
+
+    response = api.get(
+        "/api/health",
+        headers={"Authorization": f"Bearer {DEMO_TOKEN}"},
+    )
+
+    assert response.status_code == 200
+
+
 def test_mock_api_exposes_pagination_metadata(api: TestClient) -> None:
     response = api.get(
         "/api/orders",

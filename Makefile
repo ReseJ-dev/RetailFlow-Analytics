@@ -1,4 +1,7 @@
-.PHONY: install test lint format type-check check run
+.PHONY: install test lint format typecheck type-check check run demo-data \
+	docker-build docker-up docker-down docker-logs
+
+COMPOSE ?= docker compose
 
 install:
 	python -m pip install -e ".[dev]"
@@ -12,10 +15,27 @@ lint:
 format:
 	python -m ruff format .
 
-type-check:
+typecheck:
 	python -m mypy src app
 
-check: lint type-check test
+type-check: typecheck
+
+check: lint typecheck test
 
 run:
 	python -m streamlit run app/main.py
+
+demo-data:
+	python -m retailflow generate-demo-data --output-directory demo_data
+
+docker-build:
+	$(COMPOSE) build retailflow
+
+docker-up:
+	$(COMPOSE) up --build -d
+
+docker-down:
+	$(COMPOSE) down
+
+docker-logs:
+	$(COMPOSE) logs --follow retailflow

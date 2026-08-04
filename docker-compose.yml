@@ -1,0 +1,64 @@
+services:
+  retailflow:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: retailflow-analytics:local
+    init: true
+    ports:
+      - "${RETAILFLOW_PORT:-8501}:8501"
+    environment:
+      RETAILFLOW_OUTPUT__OUTPUT_DIRECTORY: /app/output
+      RETAILFLOW_STORAGE__DATABASE_URL: sqlite:////app/data/retailflow.sqlite3
+      RETAIL_API_URL: "${RETAILFLOW_DOCKER_API_URL:-http://mock-api:8000}"
+      RETAIL_API_TOKEN: "${RETAIL_API_TOKEN:-}"
+      RETAILFLOW_GENERATE_DEMO_DATA: "${RETAILFLOW_GENERATE_DEMO_DATA:-false}"
+      RETAILFLOW_DEMO_ORDER_COUNT: "${RETAILFLOW_DEMO_ORDER_COUNT:-5000}"
+      RETAILFLOW_DEMO_PRODUCT_COUNT: "${RETAILFLOW_DEMO_PRODUCT_COUNT:-200}"
+      RETAILFLOW_DEMO_RANDOM_SEED: "${RETAILFLOW_DEMO_RANDOM_SEED:-42}"
+    volumes:
+      - retailflow-reports:/app/output
+      - retailflow-database:/app/data
+      - retailflow-demo-data:/app/demo_data
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+
+  mock-api:
+    profiles: ["mock-api"]
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: retailflow-analytics:local
+    init: true
+    command:
+      - python
+      - -m
+      - uvicorn
+      - mock_api.main:app
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8000"
+    ports:
+      - "${RETAILFLOW_MOCK_API_PORT:-8000}:8000"
+    environment:
+      RETAIL_API_TOKEN: "${RETAIL_API_TOKEN:-}"
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/openapi.json', timeout=4).read()"
+      interval: 15s
+      timeout: 5s
+      start_period: 10s
+      retries: 5
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  retailflow-reports:
+  retailflow-database:
+  retailflow-demo-data:

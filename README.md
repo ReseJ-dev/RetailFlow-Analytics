@@ -1,8 +1,8 @@
 # RetailFlow Analytics
 
-RetailFlow Analytics is a production-oriented Python application for validating, cleaning, combining, and analysing sales, product, inventory, returns, and sales-target data, with Excel management reporting and a Streamlit interface planned for later development.
+RetailFlow Analytics is a production-oriented Python application for validating, cleaning, combining, and analysing sales, product, inventory, returns, and sales-target data, with Excel management reporting and a Streamlit interface.
 
-> **Development status:** Initial project scaffold. Business features are not yet implemented.
+> **Development status:** Active development; core processing, analytics, reporting, CLI, and Streamlit workflows are available.
 
 ## Local setup
 
@@ -56,3 +56,53 @@ set, then run `python -m retailflow validate --config config/api.yaml`. The toke
 must come from `RETAIL_API_TOKEN`; it is never written to YAML, SQLite, or logs.
 File and API sources cannot be combined unless `sources.allow_mixed_sources` is
 explicitly enabled.
+
+## Docker
+
+Build and start the Streamlit application with:
+
+```bash
+docker compose up --build
+```
+
+The application is available at <http://localhost:8501>. It runs as the
+non-root `retailflow` user, and its health check calls Streamlit's real
+`/_stcore/health` endpoint.
+
+Compose uses named volumes so generated reports, SQLite run history, and demo
+data survive container replacement:
+
+- `retailflow-reports` → `/app/output`;
+- `retailflow-database` → `/app/data`;
+- `retailflow-demo-data` → `/app/demo_data`.
+
+`docker compose down` preserves these volumes. Do not use `down --volumes`
+unless you intend to delete the persisted local data.
+
+To generate demo files on the first container startup:
+
+```bash
+RETAILFLOW_GENERATE_DEMO_DATA=true docker compose up --build
+```
+
+The optional mock API listens on port 8000 and is enabled with its Compose
+profile. Set the bearer token through the environment; do not put production
+credentials in the Compose file:
+
+```bash
+export RETAIL_API_TOKEN=retailflow-demo-token
+docker compose --profile mock-api up --build
+```
+
+Inside Compose, Streamlit reaches it at `http://mock-api:8000`. Override host
+ports with `RETAILFLOW_PORT` and `RETAILFLOW_MOCK_API_PORT`, or override the
+container API URL with `RETAILFLOW_DOCKER_API_URL`.
+
+Equivalent Make targets are available:
+
+```bash
+make docker-build
+make docker-up
+make docker-logs
+make docker-down
+```

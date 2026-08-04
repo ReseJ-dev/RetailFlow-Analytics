@@ -113,7 +113,7 @@ RETURNS = (
 
 
 def _expected_token() -> str:
-    return os.getenv("RETAIL_API_TOKEN", DEMO_TOKEN)
+    return os.getenv("RETAIL_API_TOKEN") or DEMO_TOKEN
 
 
 def require_token(
