@@ -45,8 +45,21 @@ def safe_many_to_one_merge(
             f"Cannot merge '{right_name}'; its join keys are not unique.",
             technical_detail=(f"Duplicate key rows: {int(duplicate_keys.sum())}; keys: {keys}"),
         )
+    merge_left = left
+    merge_right = right
+    if left.empty or right.empty:
+        # Pandas may infer incompatible dtypes for padded required columns in
+        # fully excluded datasets. Object join keys preserve an empty result's
+        # schema without changing any non-empty merge or business calculation.
+        merge_left = left.copy()
+        merge_right = right.copy()
+        for key in keys:
+            merge_left[key] = merge_left[key].astype("object")
+            merge_right[key] = merge_right[key].astype("object")
     try:
-        merged = left.merge(right, how="left", on=keys, validate="many_to_one")
+        merged = merge_left.merge(
+            merge_right, how="left", on=keys, validate="many_to_one"
+        )
     except MergeError as error:
         raise DataValidationError(
             f"Cannot safely merge '{right_name}'.", technical_detail=str(error)

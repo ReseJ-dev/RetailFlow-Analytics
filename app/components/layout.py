@@ -25,7 +25,12 @@ class NavigationItem:
 NAVIGATION_ITEMS = (
     NavigationItem(AppPage.OVERVIEW, "⌂", "Start a report and review recent activity.", True),
     NavigationItem(AppPage.UPLOAD_DATA, "↑", "Upload and map source datasets."),
-    NavigationItem(AppPage.DATA_QUALITY, "✓", "Review validation results and exclusions."),
+    NavigationItem(
+        AppPage.DATA_QUALITY,
+        "✓",
+        "Review validation results and exclusions.",
+        True,
+    ),
     NavigationItem(AppPage.DASHBOARD, "▦", "Explore sales, returns, and inventory analytics."),
     NavigationItem(AppPage.GENERATE_REPORT, "↓", "Configure and create an Excel report."),
     NavigationItem(AppPage.RUN_HISTORY, "◷", "Review previous processing runs."),

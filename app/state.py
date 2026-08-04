@@ -51,6 +51,9 @@ class StateKey(StrEnum):
     APPLICATION_STATUS = "application_status"
     ACTIVE_FILTERS = "active_filters"
     REPORT_SETTINGS = "report_settings"
+    IMPORT_SETTINGS = "import_settings"
+    ISSUE_ACTIONS = "issue_actions"
+    WARNINGS_CONFIRMED = "warnings_confirmed"
     CONFIRM_NEW_REPORT = "confirm_new_report"
 
 
@@ -108,6 +111,9 @@ _DEFAULT_FACTORIES: dict[StateKey, DefaultFactory] = {
     StateKey.APPLICATION_STATUS: lambda: ApplicationStatus.WAITING_FOR_DATA,
     StateKey.ACTIVE_FILTERS: dict,
     StateKey.REPORT_SETTINGS: dict,
+    StateKey.IMPORT_SETTINGS: dict,
+    StateKey.ISSUE_ACTIONS: dict,
+    StateKey.WARNINGS_CONFIRMED: lambda: False,
     StateKey.CONFIRM_NEW_REPORT: lambda: False,
 }
 
@@ -122,6 +128,8 @@ _TEMPORARY_KEYS = (
     StateKey.RETURNS_ANALYTICS,
     StateKey.RECOMMENDATIONS,
     StateKey.ACTIVE_FILTERS,
+    StateKey.ISSUE_ACTIONS,
+    StateKey.WARNINGS_CONFIRMED,
 )
 
 
