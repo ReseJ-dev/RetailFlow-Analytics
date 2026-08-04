@@ -37,7 +37,12 @@ NAVIGATION_ITEMS = (
         "Explore sales, returns, and inventory analytics.",
         True,
     ),
-    NavigationItem(AppPage.GENERATE_REPORT, "↓", "Configure and create an Excel report."),
+    NavigationItem(
+        AppPage.GENERATE_REPORT,
+        "↓",
+        "Configure and create an Excel report.",
+        True,
+    ),
     NavigationItem(AppPage.RUN_HISTORY, "◷", "Review previous processing runs."),
     NavigationItem(AppPage.SETTINGS, "⚙", "Manage report and validation preferences."),
 )

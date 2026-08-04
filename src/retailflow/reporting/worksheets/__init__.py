@@ -34,6 +34,8 @@ class WorksheetContext:
     application_version: str
     reporting_period: str
     prepared_by: str
+    report_title: str = "RetailFlow Analytics Management Report"
+    included_worksheets: tuple[str, ...] = ()
     logo_path: Path | None = None
     previous_sales: SalesAnalyticsResult | None = None
     period_comparison: PeriodComparison | None = None

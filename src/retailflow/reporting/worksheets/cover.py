@@ -14,7 +14,7 @@ def write_cover_worksheet(worksheet: Worksheet, context: WorksheetContext) -> in
     """Write a print-ready report cover and navigation directory."""
     apply_worksheet_defaults(worksheet, context.formats)
     worksheet.merge_range(
-        "A1:H2", "RetailFlow Analytics Management Report", context.formats.cover_title
+        "A1:H2", context.report_title, context.formats.cover_title
     )
     worksheet.merge_range(
         "A3:H3",
@@ -50,7 +50,10 @@ def write_cover_worksheet(worksheet: Worksheet, context: WorksheetContext) -> in
         ("07_Processed_Data", "Processed Data"),
         ("08_Report_Metadata", "Report Metadata"),
     )
-    for offset, (sheet_name, label) in enumerate(sections, start=15):
+    included_sections = (
+        section for section in sections if section[0] in context.included_worksheets
+    )
+    for offset, (sheet_name, label) in enumerate(included_sections, start=15):
         write_internal_link(worksheet, f"A{offset}", sheet_name, f"› {label}", context.formats)
     write_internal_link(
         worksheet,

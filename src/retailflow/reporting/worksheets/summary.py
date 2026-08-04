@@ -144,7 +144,8 @@ def write_summary_worksheet(
         ("I2", "04_Inventory", "View Inventory Details"),
         ("K2", "05_Returns", "View Returns Detail"),
     ):
-        write_internal_link(worksheet, cell, target, label, context.formats)
+        if target in context.included_worksheets:
+            write_internal_link(worksheet, cell, target, label, context.formats)
     _write_kpi_cards(worksheet, context)
     worksheet.set_column("A:L", 15)
 
@@ -283,9 +284,14 @@ def write_summary_worksheet(
         "SummaryAlerts",
         empty_message="No critical or warning alerts were generated.",
     )
-    write_internal_link(
-        worksheet, f"J{row - 1}", "04_Inventory", "View Inventory Detail", context.formats
-    )
+    if "04_Inventory" in context.included_worksheets:
+        write_internal_link(
+            worksheet,
+            f"J{row - 1}",
+            "04_Inventory",
+            "View Inventory Detail",
+            context.formats,
+        )
 
     write_section_header(worksheet, row, "Top Products", context.formats)
     row = write_dataframe_table(

@@ -125,7 +125,13 @@ class ExcelReportGenerator:
         period_comparison: PeriodComparison | None = None,
         reporting_period: str | None = None,
         prepared_by: str = "RetailFlow Analytics",
+        report_title: str = "RetailFlow Analytics Management Report",
         logo_path: str | Path | None = None,
+        include_processed_data: bool = True,
+        include_data_quality_report: bool = True,
+        include_inventory_analysis: bool = True,
+        include_returns_analysis: bool = True,
+        include_recommendations: bool = True,
         visual_thresholds: ReportVisualThresholds | None = None,
     ) -> ReportGenerationResult:
         """Generate the workbook and return its path, size, and aggregate statistics."""
@@ -153,7 +159,11 @@ class ExcelReportGenerator:
 
         temporary_path = target.with_name(f".{target.stem}.{identifier}.tmp")
         inventory_frame = inventory_analytics if inventory_analytics is not None else pd.DataFrame()
-        recommendation_frame = recommendations_to_dataframe(recommendations)
+        recommendation_frame = (
+            recommendations_to_dataframe(recommendations)
+            if include_recommendations
+            else pd.DataFrame()
+        )
         resolved_logo = Path(logo_path) if logo_path is not None else None
         if resolved_logo is not None and not resolved_logo.is_file():
             raise ReportGenerationError(
@@ -175,6 +185,16 @@ class ExcelReportGenerator:
                 {"nan_inf_to_errors": True, "remove_timezone": True},
             )
             formats = create_report_formats(workbook, self.default_currency, self.theme)
+            included_worksheets = tuple(
+                sheet_name
+                for sheet_name in REQUIRED_WORKSHEETS
+                if not (
+                    (sheet_name == "04_Inventory" and not include_inventory_analysis)
+                    or (sheet_name == "05_Returns" and not include_returns_analysis)
+                    or (sheet_name == "06_Data_Quality" and not include_data_quality_report)
+                    or (sheet_name == "07_Processed_Data" and not include_processed_data)
+                )
+            )
             context = WorksheetContext(
                 processing=processing_result,
                 sales=sales_analytics,
@@ -189,6 +209,8 @@ class ExcelReportGenerator:
                 application_version=__version__,
                 reporting_period=resolved_period,
                 prepared_by=prepared_by,
+                report_title=report_title,
+                included_worksheets=included_worksheets,
                 logo_path=resolved_logo,
                 previous_sales=previous_sales_analytics,
                 period_comparison=resolved_comparison,
@@ -196,7 +218,7 @@ class ExcelReportGenerator:
             )
             workbook.set_properties(
                 {
-                    "title": "RetailFlow Analytics Management Report",
+                    "title": report_title,
                     "subject": "Sales, returns, inventory, and data-quality management report",
                     "author": self.company_name,
                     "company": self.company_name,
@@ -215,20 +237,39 @@ class ExcelReportGenerator:
             rows_by_worksheet["03_Product_Performance"] = write_products_worksheet(
                 workbook, sheet, context
             )
-            sheet = workbook.add_worksheet("04_Inventory")
-            rows_by_worksheet["04_Inventory"] = write_inventory_worksheet(workbook, sheet, context)
-            sheet = workbook.add_worksheet("05_Returns")
-            rows_by_worksheet["05_Returns"] = write_returns_worksheet(workbook, sheet, context)
-            sheet = workbook.add_worksheet("06_Data_Quality")
-            rows_by_worksheet["06_Data_Quality"] = write_data_quality_worksheet(sheet, context)
-            sheet = workbook.add_worksheet("07_Processed_Data")
-            rows_by_worksheet["07_Processed_Data"] = write_processed_data_worksheet(sheet, context)
+            if include_inventory_analysis:
+                sheet = workbook.add_worksheet("04_Inventory")
+                rows_by_worksheet["04_Inventory"] = write_inventory_worksheet(
+                    workbook, sheet, context
+                )
+            if include_returns_analysis:
+                sheet = workbook.add_worksheet("05_Returns")
+                rows_by_worksheet["05_Returns"] = write_returns_worksheet(
+                    workbook, sheet, context
+                )
+            if include_data_quality_report:
+                sheet = workbook.add_worksheet("06_Data_Quality")
+                rows_by_worksheet["06_Data_Quality"] = write_data_quality_worksheet(
+                    sheet, context
+                )
+            if include_processed_data:
+                sheet = workbook.add_worksheet("07_Processed_Data")
+                rows_by_worksheet["07_Processed_Data"] = write_processed_data_worksheet(
+                    sheet, context
+                )
             sheet = workbook.add_worksheet("08_Report_Metadata")
             rows_by_worksheet["08_Report_Metadata"] = write_metadata_worksheet(sheet, context)
             workbook.close()
             workbook = None
             temporary_path.replace(target)
-        except (OSError, XlsxWriterException, TypeError, ValueError) as error:
+        except MemoryError:
+            if workbook is not None:
+                with suppress(OSError, XlsxWriterException):
+                    workbook.close()
+            temporary_path.unlink(missing_ok=True)
+            logger.exception("Excel report generation ran out of memory")
+            raise
+        except Exception as error:
             if workbook is not None:
                 with suppress(OSError, XlsxWriterException):
                     workbook.close()
@@ -242,7 +283,7 @@ class ExcelReportGenerator:
 
         elapsed = round(monotonic() - started_at, 3)
         statistics = ReportGenerationStatistics(
-            worksheet_count=len(REQUIRED_WORKSHEETS),
+            worksheet_count=len(rows_by_worksheet),
             processed_order_rows=len(processing_result.processed_orders),
             inventory_rows=len(processing_result.inventory),
             return_rows=len(processing_result.returns),
@@ -282,7 +323,13 @@ def generate_excel_report(
     period_comparison: PeriodComparison | None = None,
     reporting_period: str | None = None,
     prepared_by: str = "RetailFlow Analytics",
+    report_title: str = "RetailFlow Analytics Management Report",
     logo_path: str | Path | None = None,
+    include_processed_data: bool = True,
+    include_data_quality_report: bool = True,
+    include_inventory_analysis: bool = True,
+    include_returns_analysis: bool = True,
+    include_recommendations: bool = True,
     visual_thresholds: ReportVisualThresholds | None = None,
     theme: ReportTheme = DEFAULT_THEME,
 ) -> ReportGenerationResult:
@@ -307,7 +354,13 @@ def generate_excel_report(
         period_comparison=period_comparison,
         reporting_period=reporting_period,
         prepared_by=prepared_by,
+        report_title=report_title,
         logo_path=logo_path,
+        include_processed_data=include_processed_data,
+        include_data_quality_report=include_data_quality_report,
+        include_inventory_analysis=include_inventory_analysis,
+        include_returns_analysis=include_returns_analysis,
+        include_recommendations=include_recommendations,
         visual_thresholds=visual_thresholds,
     )
 
