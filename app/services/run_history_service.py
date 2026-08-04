@@ -10,7 +10,12 @@ from pathlib import Path
 import pandas as pd
 
 from retailflow.common.config import RetailFlowSettings, load_config
-from retailflow.storage import Database, RunRecord, RunRepository, RunStatus
+from retailflow.storage import (
+    RunRecord,
+    RunRepository,
+    RunStatus,
+    create_run_repository,
+)
 
 MISSING_REPORT_MESSAGE = (
     "The report file is no longer available, but the run metadata is preserved."
@@ -30,10 +35,7 @@ class RunHistoryFilters:
 
 @lru_cache(maxsize=8)
 def _cached_repository(database_url: str, create_tables: bool) -> RunRepository:
-    database = Database(database_url)
-    if create_tables:
-        database.create_tables()
-    return RunRepository(database)
+    return create_run_repository(database_url, create_tables=create_tables)
 
 
 def get_run_repository(

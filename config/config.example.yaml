@@ -18,6 +18,7 @@ validation:
   duplicate_strategy: "keep_first"
   allow_unknown_products: false
   exclude_invalid_rows: true
+  allow_report_with_warnings_in_strict_mode: false
 
 output:
   output_directory: "output"
@@ -26,3 +27,10 @@ output:
 storage:
   database_url: "sqlite:///retailflow.sqlite3"
   create_tables: true
+
+sources:
+  orders: "demo_data/orders.csv"
+  products: "demo_data/products.xlsx"
+  inventory: "demo_data/inventory.csv"
+  returns: "demo_data/returns.xlsx"
+  targets: "demo_data/monthly_targets.csv"

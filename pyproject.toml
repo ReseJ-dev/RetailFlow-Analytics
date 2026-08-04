@@ -24,6 +24,9 @@ dependencies = [
     "xlsxwriter",
 ]
 
+[project.scripts]
+retailflow = "retailflow.cli:app"
+
 [project.optional-dependencies]
 dev = [
     "mypy",

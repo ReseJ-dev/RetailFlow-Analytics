@@ -16,6 +16,21 @@ python -m pip install -e ".[dev]"
 make check
 ```
 
+## Command-line interface
+
+Run the CLI with `python -m retailflow --help`. For example:
+
+```bash
+python -m retailflow validate --config config/config.example.yaml
+python -m retailflow generate --config config/config.example.yaml --period 2025-01
+python -m retailflow generate-demo-data --output-directory demo_data
+```
+
+Stable exit codes are: `0` success, `2` configuration error, `3` source-file
+error, `4` validation failure, `5` report-generation failure, and `10`
+unexpected internal error. Tracebacks are hidden by default and enabled with
+`--debug` on commands that perform file or configuration work.
+
 To start the placeholder Streamlit application:
 
 ```bash

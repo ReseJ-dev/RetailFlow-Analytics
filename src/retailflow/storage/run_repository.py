@@ -247,4 +247,16 @@ class RunRepository:
         return record
 
 
-__all__ = ["RunRepository", "RunRepositoryError"]
+def create_run_repository(
+    database_url: str = "sqlite:///retailflow.sqlite3",
+    *,
+    create_tables: bool = True,
+) -> RunRepository:
+    """Create a configured repository and optionally initialize its schema."""
+    database = Database(database_url)
+    if create_tables:
+        database.create_tables()
+    return RunRepository(database)
+
+
+__all__ = ["RunRepository", "RunRepositoryError", "create_run_repository"]

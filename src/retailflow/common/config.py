@@ -69,6 +69,7 @@ class ValidationSettings(BaseModel):
     ] = "keep_first"
     allow_unknown_products: bool = False
     exclude_invalid_rows: bool = True
+    allow_report_with_warnings_in_strict_mode: bool = False
 
 
 class OutputSettings(BaseModel):
@@ -89,6 +90,18 @@ class StorageSettings(BaseModel):
     create_tables: bool = True
 
 
+class SourceSettings(BaseModel):
+    """Optional filesystem sources used by non-interactive CLI runs."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    orders: Path | None = None
+    products: Path | None = None
+    inventory: Path | None = None
+    returns: Path | None = None
+    targets: Path | None = None
+
+
 class RetailFlowSettings(BaseSettings):
     """Top-level RetailFlow Analytics application settings."""
 
@@ -104,6 +117,7 @@ class RetailFlowSettings(BaseSettings):
     validation: ValidationSettings = Field(default_factory=ValidationSettings)
     output: OutputSettings = Field(default_factory=OutputSettings)
     storage: StorageSettings = Field(default_factory=StorageSettings)
+    sources: SourceSettings = Field(default_factory=SourceSettings)
 
     @classmethod
     def settings_customise_sources(
