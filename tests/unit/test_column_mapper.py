@@ -102,3 +102,22 @@ def test_manual_override_resolves_automatic_ambiguity() -> None:
     assert result.matched_required_columns["order_id"] == "Order Reference"
     assert "order_id" not in result.ambiguous_matches
     assert result.unknown_source_columns == ("Order Number",)
+
+
+def test_two_manual_source_columns_cannot_map_to_one_target_silently() -> None:
+    """Duplicate manual targets should remain ambiguous until the user chooses one."""
+    columns = ["Reference A", "Reference B", "Date", "SKU", "Qty", "Price"]
+
+    result = map_columns(
+        columns,
+        "orders",
+        manual_overrides={
+            "Reference A": "order_id",
+            "Reference B": "order_id",
+        },
+    )
+
+    assert result.ambiguous_matches["order_id"] == ("Reference A", "Reference B")
+    assert "order_id" in result.missing_required_columns
+    assert "Reference A" not in result.column_mapping
+    assert "Reference B" not in result.column_mapping

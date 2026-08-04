@@ -74,6 +74,15 @@ ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 minversion = "8.0"
-addopts = "--strict-config --strict-markers --cov=retailflow --cov-report=term-missing"
+addopts = "--strict-config --strict-markers --cov=retailflow --cov-report=term-missing --cov-report=xml:coverage.xml --cov-fail-under=85"
 testpaths = ["tests"]
 pythonpath = ["src", "."]
+
+[tool.coverage.run]
+source = ["retailflow"]
+
+[tool.coverage.report]
+# The threshold covers production code without excluding defensive branches.
+fail_under = 85
+show_missing = true
+skip_covered = false

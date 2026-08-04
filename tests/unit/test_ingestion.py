@@ -98,6 +98,23 @@ def test_workbook_with_multiple_sheets_selects_requested_sheet() -> None:
     assert loaded.columns == ("product_id",)
 
 
+def test_missing_excel_worksheet_is_rejected_with_requested_name() -> None:
+    """An explicit worksheet selection should fail clearly when it is absent."""
+    stream = BytesIO()
+    with pd.ExcelWriter(stream, engine="openpyxl") as writer:
+        pd.DataFrame({"order_id": ["O-1"]}).to_excel(
+            writer,
+            index=False,
+            sheet_name="Orders",
+        )
+
+    with pytest.raises(
+        DataSourceError,
+        match="does not contain a sheet named 'Products'",
+    ):
+        read_excel_file(stream.getvalue(), filename="business.xlsx", sheet_name="Products")
+
+
 def test_load_csv_from_in_memory_byte_stream() -> None:
     """Binary streams should be accepted without changing the caller's cursor."""
     stream = BytesIO(b"product_id,stock\nP-1,12\n")

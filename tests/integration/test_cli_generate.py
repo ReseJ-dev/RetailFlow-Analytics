@@ -185,3 +185,21 @@ def test_validate_prints_counts_and_writes_only_error_report(tmp_path: Path) -> 
     assert "Rule-based quality score:" in result.output
     assert error_report.exists()
     assert not (tmp_path / "retailflow_report.xlsx").exists()
+
+
+def test_validate_returns_validation_exit_for_blocking_business_error(
+    tmp_path: Path,
+) -> None:
+    sources = _write_sources(tmp_path / "invalid-data")
+    orders = pd.read_csv(sources["orders"])
+    orders.loc[0, "quantity"] = -1
+    orders.to_csv(sources["orders"], index=False)
+    arguments = ["validate"]
+    for name, path in sources.items():
+        arguments.extend((f"--{name}", str(path)))
+
+    result = runner.invoke(app, arguments)
+
+    assert result.exit_code == ExitCode.VALIDATION_FAILURE
+    assert "Validation found blocking errors" in result.output
+    assert "Traceback" not in result.output
