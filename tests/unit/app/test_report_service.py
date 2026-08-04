@@ -26,9 +26,22 @@ from retailflow.common.config import RetailFlowSettings
 from retailflow.common.exceptions import ReportGenerationError
 from retailflow.models import ProcessingResult
 from retailflow.reporting.excel_report import ExcelReportGenerator
+from retailflow.storage import Database, RunRepository
 from retailflow.validation import DatasetType, ValidationIssue, ValidationSeverity
 
 from .test_processing_service import _state
+
+
+@pytest.fixture(autouse=True)
+def _isolated_run_history(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> RunRepository:
+    database = Database(f"sqlite:///{tmp_path / 'report-history.sqlite3'}")
+    database.create_tables()
+    repository = RunRepository(database)
+    monkeypatch.setattr(
+        "app.services.report_service.get_run_repository",
+        lambda: repository,
+    )
+    return repository
 
 
 def _ready_state() -> dict[str, object]:

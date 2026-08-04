@@ -52,6 +52,19 @@ def test_environment_overrides_yaml(tmp_path: Path, monkeypatch: pytest.MonkeyPa
     assert settings.report.include_raw_data is True
 
 
+def test_environment_configures_run_history_database(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Storage configuration should use the same typed environment override mechanism."""
+    monkeypatch.setenv(
+        "RETAILFLOW_STORAGE__DATABASE_URL", "sqlite:///custom-history.sqlite3"
+    )
+
+    settings = load_config()
+
+    assert settings.storage.database_url == "sqlite:///custom-history.sqlite3"
+
+
 @pytest.mark.parametrize(
     ("field_name", "invalid_value"),
     [

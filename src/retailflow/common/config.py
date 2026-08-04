@@ -80,6 +80,15 @@ class OutputSettings(BaseModel):
     filename_pattern: str = "retailflow_report_{timestamp}.xlsx"
 
 
+class StorageSettings(BaseModel):
+    """Settings controlling local run-history persistence."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    database_url: str = "sqlite:///retailflow.sqlite3"
+    create_tables: bool = True
+
+
 class RetailFlowSettings(BaseSettings):
     """Top-level RetailFlow Analytics application settings."""
 
@@ -94,6 +103,7 @@ class RetailFlowSettings(BaseSettings):
     inventory: InventoryThresholds = Field(default_factory=InventoryThresholds)
     validation: ValidationSettings = Field(default_factory=ValidationSettings)
     output: OutputSettings = Field(default_factory=OutputSettings)
+    storage: StorageSettings = Field(default_factory=StorageSettings)
 
     @classmethod
     def settings_customise_sources(

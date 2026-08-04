@@ -12,6 +12,7 @@ from app.pages.dashboard import render_dashboard
 from app.pages.data_quality import render_data_quality
 from app.pages.generate_report import render_generate_report
 from app.pages.overview import render_overview
+from app.pages.run_history import render_run_history
 from app.state import AppPage, initialize_state
 
 logger = logging.getLogger("retailflow.app")
@@ -33,6 +34,8 @@ def _render_application() -> None:
         render_dashboard(st.session_state)
     elif page is AppPage.GENERATE_REPORT:
         render_generate_report(st.session_state)
+    elif page is AppPage.RUN_HISTORY:
+        render_run_history(st.session_state)
     else:
         render_placeholder(page, st.session_state)
 

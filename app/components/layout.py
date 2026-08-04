@@ -43,7 +43,7 @@ NAVIGATION_ITEMS = (
         "Configure and create an Excel report.",
         True,
     ),
-    NavigationItem(AppPage.RUN_HISTORY, "◷", "Review previous processing runs."),
+    NavigationItem(AppPage.RUN_HISTORY, "◷", "Review previous processing runs.", True),
     NavigationItem(AppPage.SETTINGS, "⚙", "Manage report and validation preferences."),
 )
 

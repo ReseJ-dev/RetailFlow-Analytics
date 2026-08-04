@@ -22,3 +22,7 @@ validation:
 output:
   output_directory: "output"
   filename_pattern: "retailflow_report_{timestamp}.xlsx"
+
+storage:
+  database_url: "sqlite:///retailflow.sqlite3"
+  create_tables: true

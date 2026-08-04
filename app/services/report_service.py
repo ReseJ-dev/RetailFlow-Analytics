@@ -11,7 +11,6 @@ from datetime import UTC, date, datetime
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from time import monotonic
-from uuid import uuid4
 
 import pandas as pd
 
@@ -21,22 +20,25 @@ from app.services.processing_service import (
     has_blocking_structural_errors,
     issue_identifier,
 )
+from app.services.run_history_service import get_run_repository
 from app.state import (
     ApplicationStatus,
     SessionState,
     StateKey,
     initialize_state,
 )
+from retailflow import __version__
 from retailflow.analytics.models import ReturnsAnalyticsResult, SalesAnalyticsResult
 from retailflow.analytics.recommendations import Recommendation
 from retailflow.common.config import RetailFlowSettings
-from retailflow.common.exceptions import ReportGenerationError, RetailFlowError
+from retailflow.common.exceptions import RetailFlowError
 from retailflow.models import ProcessingResult
 from retailflow.reporting.excel_report import (
     ExcelReportGenerator,
     ReportGenerationResult,
     ReportGenerationStatistics,
 )
+from retailflow.storage import RunRecord, RunRepository
 from retailflow.validation import ValidationSeverity
 
 logger = logging.getLogger("retailflow.app.reporting")
@@ -306,11 +308,16 @@ def generate_management_report(
     *,
     progress_callback: ReportProgressCallback | None = None,
     generator_factory: type[ExcelReportGenerator] = ExcelReportGenerator,
+    run_repository: RunRepository | None = None,
 ) -> ReportServiceResult:
     """Validate session inputs, generate and verify a downloadable Excel report."""
     initialize_state(state)
     started = monotonic()
+    started_at = datetime.now(UTC)
     current_stage = _PROGRESS_LABELS[0]
+    repository: RunRepository | None = None
+    run: RunRecord | None = None
+    processing: ProcessingResult | None = None
     state[StateKey.APPLICATION_STATUS.value] = ApplicationStatus.PROCESSING
     try:
         _emit(progress_callback, 1)
@@ -321,11 +328,12 @@ def generate_management_report(
 
         current_stage = _PROGRESS_LABELS[1]
         _emit(progress_callback, 2)
-        processing = _state_value(state, StateKey.PROCESSING_RESULT)
+        processing_value = _state_value(state, StateKey.PROCESSING_RESULT)
         sales = _state_value(state, StateKey.SALES_ANALYTICS)
         returns = _state_value(state, StateKey.RETURNS_ANALYTICS)
         inventory = _state_value(state, StateKey.INVENTORY_ANALYTICS)
-        assert isinstance(processing, ProcessingResult)
+        assert isinstance(processing_value, ProcessingResult)
+        processing = processing_value
         assert isinstance(sales, SalesAnalyticsResult)
         assert isinstance(returns, ReturnsAnalyticsResult)
         assert isinstance(inventory, pd.DataFrame)
@@ -341,12 +349,32 @@ def generate_management_report(
         )
         actions = _state_value(state, StateKey.ISSUE_ACTIONS)
         import_settings = _state_value(state, StateKey.IMPORT_SETTINGS)
+        repository = run_repository or get_run_repository()
+        run = repository.create_run(
+            reporting_period_start=request.period_start,
+            reporting_period_end=request.period_end,
+            source_filenames={
+                dataset_type.value: metadata.filename
+                for dataset_type, metadata in processing.source_metadata.items()
+            },
+            source_row_counts={
+                dataset_type.value: statistics.input_rows
+                for dataset_type, statistics in processing.statistics.by_dataset.items()
+            },
+            configuration_snapshot={
+                "report": request,
+                "import": import_settings if isinstance(import_settings, Mapping) else {},
+            },
+            application_version=__version__,
+            started_at=started_at,
+        )
+        repository.mark_running(run.run_id)
         quality_bytes = generate_quality_report(
             processing,
             actions=actions if isinstance(actions, Mapping) else None,
             import_settings=import_settings if isinstance(import_settings, Mapping) else None,
         )
-        report_id = uuid4().hex
+        report_id = run.run_id
         generated_at = datetime.now(UTC)
 
         with TemporaryDirectory(prefix="retailflow-report-") as temp_directory:
@@ -402,6 +430,21 @@ def generate_management_report(
             ),
             quality_report=quality_bytes,
         )
+        repository.mark_completed(
+            run.run_id,
+            completed_at=datetime.now(UTC),
+            processed_row_count=processing.statistics.total_processed_rows,
+            excluded_row_count=processing.statistics.total_excluded_rows,
+            warning_count=result.warning_count,
+            error_count=sum(
+                issue.severity is ValidationSeverity.ERROR
+                for issue in processing.validation_issues
+            ),
+            report_path=result.report_path,
+            report_filename=result.report_path.name,
+            report_size=result.file_size,
+            duration_seconds=result.generation_seconds,
+        )
         state[StateKey.GENERATED_REPORT.value] = result
         state[StateKey.LAST_SUCCESSFUL_RUN.value] = generated_at
         state[StateKey.SELECTED_REPORTING_PERIOD.value] = request.reporting_period
@@ -420,22 +463,60 @@ def generate_management_report(
     except MemoryError as error:
         state[StateKey.APPLICATION_STATUS.value] = ApplicationStatus.FAILED
         logger.exception("Report generation ran out of memory during '%s'", current_stage)
-        raise ReportServiceError(
+        service_error = ReportServiceError(
             "There is not enough memory to create this report. Exclude processed data or "
             "reduce the reporting period and try again.",
             technical_detail=f"Stage: {current_stage}",
-        ) from error
-    except (ReportServiceError, ReportGenerationError):
+        )
+        _save_failed_run(repository, run, processing, current_stage, started, service_error.message)
+        raise service_error from error
+    except RetailFlowError as error:
         state[StateKey.APPLICATION_STATUS.value] = ApplicationStatus.FAILED
         logger.exception("Report generation failed during '%s'", current_stage)
+        _save_failed_run(repository, run, processing, current_stage, started, error.message)
         raise
     except Exception as error:
         state[StateKey.APPLICATION_STATUS.value] = ApplicationStatus.FAILED
         logger.exception("Unexpected report failure during '%s'", current_stage)
-        raise ReportServiceError(
+        service_error = ReportServiceError(
             "The Excel report could not be generated. Review the settings and try again.",
             technical_detail=f"Stage: {current_stage}; {error}",
-        ) from error
+        )
+        _save_failed_run(repository, run, processing, current_stage, started, service_error.message)
+        raise service_error from error
+
+
+def _save_failed_run(
+    repository: RunRepository | None,
+    run: RunRecord | None,
+    processing: ProcessingResult | None,
+    stage: str,
+    started: float,
+    message: str,
+) -> None:
+    """Persist a safe failure summary without ever masking the original exception."""
+    if repository is None or run is None:
+        return
+    issues = processing.validation_issues if processing is not None else ()
+    try:
+        repository.mark_failed(
+            run.run_id,
+            failure_summary=f"{message} Stage: {stage}.",
+            completed_at=datetime.now(UTC),
+            duration_seconds=round(monotonic() - started, 3),
+            processed_row_count=(
+                processing.statistics.total_processed_rows if processing is not None else 0
+            ),
+            excluded_row_count=(
+                processing.statistics.total_excluded_rows if processing is not None else 0
+            ),
+            warning_count=sum(
+                issue.severity is ValidationSeverity.WARNING for issue in issues
+            ),
+            error_count=sum(issue.severity is ValidationSeverity.ERROR for issue in issues),
+        )
+    except RetailFlowError:
+        logger.exception("Could not persist failure status for run %s", run.run_id)
 
 
 def read_generated_report(result: ReportServiceResult) -> bytes:
