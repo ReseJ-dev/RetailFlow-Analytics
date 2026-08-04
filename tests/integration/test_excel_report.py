@@ -189,8 +189,8 @@ def test_generate_excel_report_creates_every_required_worksheet(tmp_path: Path) 
     assert workbook["00_Cover"]["B4"].value == "Northstar Retail Group"
     assert workbook["00_Cover"]["B5"].value == "REPORT-TEST-001"
     assert workbook["01_Executive_Summary"]["A1"].value == "Executive Summary"
-    assert workbook["01_Executive_Summary"]["B5"].value == 40
-    assert "EUR" in workbook["01_Executive_Summary"]["B5"].number_format
+    assert workbook["01_Executive_Summary"]["A5"].value == 30
+    assert "EUR" in workbook["01_Executive_Summary"]["A5"].number_format
     assert workbook["08_Report_Metadata"]["B3"].value == "REPORT-TEST-001"
     assert workbook["07_Processed_Data"].tables
 

@@ -4,12 +4,17 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime
+from pathlib import Path
 
 import pandas as pd
 
-from retailflow.analytics.models import ReturnsAnalyticsResult, SalesAnalyticsResult
+from retailflow.analytics.models import (
+    PeriodComparison,
+    ReturnsAnalyticsResult,
+    SalesAnalyticsResult,
+)
 from retailflow.models import ProcessingResult
-from retailflow.reporting.formatting import ReportFormats
+from retailflow.reporting.formatting import ReportFormats, ReportVisualThresholds
 
 
 @dataclass(frozen=True, slots=True)
@@ -27,6 +32,12 @@ class WorksheetContext:
     report_id: str
     generated_at: datetime
     application_version: str
+    reporting_period: str
+    prepared_by: str
+    logo_path: Path | None = None
+    previous_sales: SalesAnalyticsResult | None = None
+    period_comparison: PeriodComparison | None = None
+    visual_thresholds: ReportVisualThresholds = ReportVisualThresholds()
 
 
 __all__ = ["WorksheetContext"]

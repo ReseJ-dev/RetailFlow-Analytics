@@ -4,6 +4,9 @@ import pandas as pd
 from xlsxwriter.worksheet import Worksheet
 
 from retailflow.reporting.formatting import (
+    apply_worksheet_defaults,
+    configure_print_layout,
+    write_back_to_summary,
     write_dataframe_table,
     write_key_values,
     write_section_header,
@@ -14,7 +17,9 @@ from retailflow.reporting.worksheets import WorksheetContext
 
 def write_metadata_worksheet(worksheet: Worksheet, context: WorksheetContext) -> int:
     """Write reproducibility metadata and source-file characteristics."""
+    apply_worksheet_defaults(worksheet, context.formats)
     write_title(worksheet, "Report Metadata", context.formats)
+    write_back_to_summary(worksheet, context.formats)
     next_row = write_key_values(
         worksheet,
         [
@@ -22,6 +27,8 @@ def write_metadata_worksheet(worksheet: Worksheet, context: WorksheetContext) ->
             ("Generated", context.generated_at),
             ("Application Version", context.application_version),
             ("Company", context.company_name),
+            ("Reporting Period", context.reporting_period),
+            ("Prepared By", context.prepared_by),
             ("Default Currency", context.default_currency),
             ("Total Source Rows", context.processing.statistics.total_input_rows),
             ("Total Processed Rows", context.processing.statistics.total_processed_rows),
@@ -48,7 +55,7 @@ def write_metadata_worksheet(worksheet: Worksheet, context: WorksheetContext) ->
             for dataset_type, metadata in context.processing.source_metadata.items()
         ]
     )
-    return write_dataframe_table(
+    final_row = write_dataframe_table(
         worksheet,
         source_frame,
         next_row + 2,
@@ -57,4 +64,13 @@ def write_metadata_worksheet(worksheet: Worksheet, context: WorksheetContext) ->
         "ReportSources",
         include_totals=True,
         freeze_at=(3, 0),
+        empty_message="No source-file metadata is available.",
     )
+    configure_print_layout(
+        worksheet,
+        report_id=context.report_id,
+        generated_at=context.generated_at,
+        last_row=final_row,
+        last_column=max(8, len(source_frame.columns) - 1),
+    )
+    return final_row

@@ -1,38 +1,76 @@
-"""Cover worksheet builder."""
+"""Polished cover worksheet builder."""
 
 from xlsxwriter.worksheet import Worksheet
 
-from retailflow.reporting.formatting import write_key_values, write_title
+from retailflow.reporting.formatting import (
+    apply_worksheet_defaults,
+    configure_print_layout,
+    write_internal_link,
+)
 from retailflow.reporting.worksheets import WorksheetContext
 
 
 def write_cover_worksheet(worksheet: Worksheet, context: WorksheetContext) -> int:
-    """Write report identity and generation details."""
-    write_title(worksheet, "RetailFlow Analytics Management Report", context.formats)
-    worksheet.write(1, 0, "Decision-ready sales and inventory reporting", context.formats.subtitle)
-    next_row = write_key_values(
+    """Write a print-ready report cover and navigation directory."""
+    apply_worksheet_defaults(worksheet, context.formats)
+    worksheet.merge_range(
+        "A1:H2", "RetailFlow Analytics Management Report", context.formats.cover_title
+    )
+    worksheet.merge_range(
+        "A3:H3",
+        "Sales, inventory, returns, and data-quality review",
+        context.formats.cover_subtitle,
+    )
+    details = (
+        ("Company", context.company_name),
+        ("Report ID", context.report_id),
+        ("Reporting Period", context.reporting_period),
+        ("Generated", context.generated_at),
+        ("Prepared By", context.prepared_by),
+        ("Application Version", context.application_version),
+    )
+    for row, (label, value) in enumerate(details, start=3):
+        worksheet.write(row, 0, label, context.formats.label)
+        value_format = context.formats.datetime if label == "Generated" else context.formats.text
+        worksheet.merge_range(row, 1, row, 4, value, value_format)
+    worksheet.merge_range(
+        "A11:H12",
+        "A decision-ready view of commercial performance, inventory exposure, returns, "
+        "and source-data quality. Use the links below to move through the report.",
+        context.formats.wrapped_text,
+    )
+    worksheet.write("A14", "Included sections", context.formats.section_header)
+    sections = (
+        ("01_Executive_Summary", "Executive Summary"),
+        ("02_Sales_Analysis", "Sales Analysis"),
+        ("03_Product_Performance", "Product Performance"),
+        ("04_Inventory", "Inventory"),
+        ("05_Returns", "Returns"),
+        ("06_Data_Quality", "Data Quality"),
+        ("07_Processed_Data", "Processed Data"),
+        ("08_Report_Metadata", "Report Metadata"),
+    )
+    for offset, (sheet_name, label) in enumerate(sections, start=15):
+        write_internal_link(worksheet, f"A{offset}", sheet_name, f"› {label}", context.formats)
+    write_internal_link(
         worksheet,
-        [
-            ("Company", context.company_name),
-            ("Report ID", context.report_id),
-            ("Generated", context.generated_at),
-            ("Application Version", context.application_version),
-            ("Reporting Currency", context.default_currency),
-            ("Source Rows", context.processing.statistics.total_input_rows),
-            ("Excluded Rows", context.processing.statistics.total_excluded_rows),
-        ],
-        3,
+        "F14",
+        "01_Executive_Summary",
+        "Open Executive Summary",
         context.formats,
+        button=True,
     )
-    worksheet.write(
-        next_row + 1,
-        0,
-        "Use the numbered worksheets for executive KPIs, detailed analysis, data quality, "
-        "processed records, and reproducibility metadata.",
-        context.formats.note,
+    if context.logo_path is not None:
+        worksheet.insert_image("F4", str(context.logo_path), {"x_scale": 0.45, "y_scale": 0.45})
+    worksheet.set_column("A:A", 26)
+    worksheet.set_column("B:E", 18)
+    worksheet.set_column("F:H", 16)
+    configure_print_layout(
+        worksheet,
+        report_id=context.report_id,
+        generated_at=context.generated_at,
+        last_row=23,
+        last_column=7,
+        landscape=False,
     )
-    worksheet.set_column(0, 0, 28)
-    worksheet.set_column(1, 1, 32)
-    worksheet.set_column(2, 8, 14)
-    worksheet.hide_gridlines(2)
-    return next_row + 3
+    return 24

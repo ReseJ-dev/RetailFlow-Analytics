@@ -16,11 +16,21 @@ from xlsxwriter.exceptions import XlsxWriterException
 from xlsxwriter.workbook import Workbook
 
 from retailflow import __version__
-from retailflow.analytics.models import ReturnsAnalyticsResult, SalesAnalyticsResult
+from retailflow.analytics.comparisons import compare_periods
+from retailflow.analytics.models import (
+    PeriodComparison,
+    ReturnsAnalyticsResult,
+    SalesAnalyticsResult,
+)
 from retailflow.analytics.recommendations import Recommendation, recommendations_to_dataframe
 from retailflow.common.exceptions import ReportGenerationError
 from retailflow.models import ProcessingResult
-from retailflow.reporting.formatting import create_report_formats
+from retailflow.reporting.formatting import (
+    DEFAULT_THEME,
+    ReportTheme,
+    ReportVisualThresholds,
+    create_report_formats,
+)
 from retailflow.reporting.worksheets import WorksheetContext
 from retailflow.reporting.worksheets.cover import write_cover_worksheet
 from retailflow.reporting.worksheets.data_quality import write_data_quality_worksheet
@@ -90,12 +100,14 @@ class ExcelReportGenerator:
         company_name: str = "RetailFlow Analytics",
         default_currency: str = "USD",
         overwrite: bool = False,
+        theme: ReportTheme = DEFAULT_THEME,
     ) -> None:
         """Configure report identity, destination, currency, and overwrite behavior."""
         self.output_directory = Path(output_directory)
         self.company_name = company_name
         self.default_currency = default_currency.upper()
         self.overwrite = overwrite
+        self.theme = theme
 
     def generate(
         self,
@@ -109,6 +121,12 @@ class ExcelReportGenerator:
         report_id: str | None = None,
         generated_at: datetime | None = None,
         overwrite: bool | None = None,
+        previous_sales_analytics: SalesAnalyticsResult | None = None,
+        period_comparison: PeriodComparison | None = None,
+        reporting_period: str | None = None,
+        prepared_by: str = "RetailFlow Analytics",
+        logo_path: str | Path | None = None,
+        visual_thresholds: ReportVisualThresholds | None = None,
     ) -> ReportGenerationResult:
         """Generate the workbook and return its path, size, and aggregate statistics."""
         started_at = monotonic()
@@ -136,12 +154,27 @@ class ExcelReportGenerator:
         temporary_path = target.with_name(f".{target.stem}.{identifier}.tmp")
         inventory_frame = inventory_analytics if inventory_analytics is not None else pd.DataFrame()
         recommendation_frame = recommendations_to_dataframe(recommendations)
+        resolved_logo = Path(logo_path) if logo_path is not None else None
+        if resolved_logo is not None and not resolved_logo.is_file():
+            raise ReportGenerationError(
+                "The report logo file could not be found.",
+                technical_detail=f"Missing logo path: {resolved_logo}",
+            )
+        resolved_period = reporting_period or _derive_reporting_period(sales_analytics)
+        resolved_comparison = period_comparison
+        if resolved_comparison is None and previous_sales_analytics is not None:
+            resolved_comparison = compare_periods(
+                sales_analytics.kpis, previous_sales_analytics.kpis
+            )
         formats = None
         workbook: Workbook | None = None
         rows_by_worksheet: dict[str, int] = {}
         try:
-            workbook = Workbook(temporary_path, {"nan_inf_to_errors": True})
-            formats = create_report_formats(workbook, self.default_currency)
+            workbook = Workbook(
+                temporary_path,
+                {"nan_inf_to_errors": True, "remove_timezone": True},
+            )
+            formats = create_report_formats(workbook, self.default_currency, self.theme)
             context = WorksheetContext(
                 processing=processing_result,
                 sales=sales_analytics,
@@ -154,6 +187,12 @@ class ExcelReportGenerator:
                 report_id=identifier,
                 generated_at=timestamp,
                 application_version=__version__,
+                reporting_period=resolved_period,
+                prepared_by=prepared_by,
+                logo_path=resolved_logo,
+                previous_sales=previous_sales_analytics,
+                period_comparison=resolved_comparison,
+                visual_thresholds=visual_thresholds or ReportVisualThresholds(),
             )
             workbook.set_properties(
                 {
@@ -167,25 +206,23 @@ class ExcelReportGenerator:
             sheet = workbook.add_worksheet("00_Cover")
             rows_by_worksheet["00_Cover"] = write_cover_worksheet(sheet, context)
             sheet = workbook.add_worksheet("01_Executive_Summary")
-            rows_by_worksheet["01_Executive_Summary"] = write_summary_worksheet(sheet, context)
-            sheet = workbook.add_worksheet("02_Sales_Analysis")
-            rows_by_worksheet["02_Sales_Analysis"] = write_sales_worksheet(
+            rows_by_worksheet["01_Executive_Summary"] = write_summary_worksheet(
                 workbook, sheet, context
             )
+            sheet = workbook.add_worksheet("02_Sales_Analysis")
+            rows_by_worksheet["02_Sales_Analysis"] = write_sales_worksheet(workbook, sheet, context)
             sheet = workbook.add_worksheet("03_Product_Performance")
             rows_by_worksheet["03_Product_Performance"] = write_products_worksheet(
-                sheet, context
+                workbook, sheet, context
             )
             sheet = workbook.add_worksheet("04_Inventory")
-            rows_by_worksheet["04_Inventory"] = write_inventory_worksheet(sheet, context)
+            rows_by_worksheet["04_Inventory"] = write_inventory_worksheet(workbook, sheet, context)
             sheet = workbook.add_worksheet("05_Returns")
-            rows_by_worksheet["05_Returns"] = write_returns_worksheet(sheet, context)
+            rows_by_worksheet["05_Returns"] = write_returns_worksheet(workbook, sheet, context)
             sheet = workbook.add_worksheet("06_Data_Quality")
             rows_by_worksheet["06_Data_Quality"] = write_data_quality_worksheet(sheet, context)
             sheet = workbook.add_worksheet("07_Processed_Data")
-            rows_by_worksheet["07_Processed_Data"] = write_processed_data_worksheet(
-                sheet, context
-            )
+            rows_by_worksheet["07_Processed_Data"] = write_processed_data_worksheet(sheet, context)
             sheet = workbook.add_worksheet("08_Report_Metadata")
             rows_by_worksheet["08_Report_Metadata"] = write_metadata_worksheet(sheet, context)
             workbook.close()
@@ -241,6 +278,13 @@ def generate_excel_report(
     overwrite: bool = False,
     report_id: str | None = None,
     generated_at: datetime | None = None,
+    previous_sales_analytics: SalesAnalyticsResult | None = None,
+    period_comparison: PeriodComparison | None = None,
+    reporting_period: str | None = None,
+    prepared_by: str = "RetailFlow Analytics",
+    logo_path: str | Path | None = None,
+    visual_thresholds: ReportVisualThresholds | None = None,
+    theme: ReportTheme = DEFAULT_THEME,
 ) -> ReportGenerationResult:
     """Generate an Excel report through a convenient functional interface."""
     generator = ExcelReportGenerator(
@@ -248,6 +292,7 @@ def generate_excel_report(
         company_name=company_name,
         default_currency=default_currency,
         overwrite=overwrite,
+        theme=theme,
     )
     return generator.generate(
         processing_result,
@@ -258,7 +303,23 @@ def generate_excel_report(
         filename=filename,
         report_id=report_id,
         generated_at=generated_at,
+        previous_sales_analytics=previous_sales_analytics,
+        period_comparison=period_comparison,
+        reporting_period=reporting_period,
+        prepared_by=prepared_by,
+        logo_path=logo_path,
+        visual_thresholds=visual_thresholds,
     )
 
 
 generate_report = generate_excel_report
+
+
+def _derive_reporting_period(sales: SalesAnalyticsResult) -> str:
+    """Derive a readable reporting period without changing analytical results."""
+    if "order_date" not in sales.enriched_orders.columns or sales.enriched_orders.empty:
+        return "No reporting period available"
+    dates = pd.to_datetime(sales.enriched_orders["order_date"], errors="coerce").dropna()
+    if dates.empty:
+        return "No reporting period available"
+    return f"{dates.min():%Y-%m-%d} to {dates.max():%Y-%m-%d}"
