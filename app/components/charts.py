@@ -6,35 +6,31 @@ import plotly.graph_objects as go
 import streamlit as st
 
 from app.services.dashboard_service import DashboardChartData
+from app.styles.plotly_theme import (
+    apply_chart_theme,
+    create_empty_chart_state,
+    currency_hover_value,
+    format_currency_axis,
+    get_plotly_config,
+)
 
-_COLOURS = ["#17365D", "#4472C4", "#70AD47", "#ED7D31", "#C00000", "#7F8C8D"]
 
-
-def _empty(message: str) -> None:
-    st.info(message)
+def _empty(title: str, message: str) -> None:
+    _show(create_empty_chart_state(message, title=title))
 
 
 def _money_axis(figure: go.Figure, currency: str, *, horizontal: bool = False) -> None:
-    axis = {"tickformat": ",.2f", "ticksuffix": f" {currency}"}
-    if horizontal:
-        figure.update_xaxes(**axis)
-    else:
-        figure.update_yaxes(**axis)
+    format_currency_axis(figure, currency, axis="x" if horizontal else "y")
 
 
 def _show(figure: go.Figure) -> None:
-    figure.update_layout(
-        template="plotly_white",
-        colorway=_COLOURS,
-        margin={"l": 20, "r": 20, "t": 60, "b": 20},
-        legend_title_text="",
-    )
-    st.plotly_chart(figure, width="stretch", config={"displaylogo": False})
+    apply_chart_theme(figure)
+    st.plotly_chart(figure, width="stretch", config=get_plotly_config())
 
 
 def revenue_over_time(frame: pd.DataFrame, currency: str) -> None:
     if frame.empty:
-        _empty("No revenue data is available for the selected filters.")
+        _empty("Revenue over time", "No revenue data is available for the selected filters.")
         return
     figure = px.line(
         frame,
@@ -42,8 +38,20 @@ def revenue_over_time(frame: pd.DataFrame, currency: str) -> None:
         y="net_revenue",
         markers=True,
         title="Revenue over time",
-        labels={"date": "Date", "net_revenue": f"Net revenue ({currency})"},
+        labels={
+            "date": "Date",
+            "net_revenue": f"Net revenue ({currency})",
+            "orders": "Orders",
+            "units_sold": "Units sold",
+        },
         hover_data=["orders", "units_sold"],
+    )
+    figure.update_traces(
+        hovertemplate=(
+            f"Date: %{{x|%d %b %Y}}<br>Net revenue: {currency_hover_value(currency)}"
+            "<br>Orders: %{customdata[0]:,.0f}<br>Units sold: %{customdata[1]:,.0f}"
+            "<extra></extra>"
+        )
     )
     _money_axis(figure, currency)
     _show(figure)
@@ -51,7 +59,10 @@ def revenue_over_time(frame: pd.DataFrame, currency: str) -> None:
 
 def current_vs_previous(frame: pd.DataFrame, currency: str) -> None:
     if frame.empty:
-        _empty("No current or previous-period revenue is available.")
+        _empty(
+            "Current vs previous period",
+            "No current or previous-period revenue is available.",
+        )
         return
     long = frame.melt(
         id_vars="period_day",
@@ -60,7 +71,10 @@ def current_vs_previous(frame: pd.DataFrame, currency: str) -> None:
         value_name="net_revenue",
     ).dropna(subset=["net_revenue"])
     if long.empty:
-        _empty("No current or previous-period revenue is available.")
+        _empty(
+            "Current vs previous period",
+            "No current or previous-period revenue is available.",
+        )
         return
     figure = px.line(
         long,
@@ -69,8 +83,26 @@ def current_vs_previous(frame: pd.DataFrame, currency: str) -> None:
         color="period",
         markers=True,
         title="Current vs previous period",
-        labels={"period_day": "Day in period", "net_revenue": f"Net revenue ({currency})"},
+        labels={
+            "period_day": "Day in period",
+            "net_revenue": f"Net revenue ({currency})",
+            "period": "Period",
+        },
     )
+    period_names = {
+        "current_period": "Current period",
+        "previous_period": "Previous period",
+    }
+    for trace in figure.data:
+        display_name = period_names.get(str(trace.name), str(trace.name).replace("_", " ").title())
+        trace.update(
+            name=display_name,
+            legendgroup=display_name,
+            hovertemplate=(
+                f"Day in period: %{{x}}<br>Net revenue: {currency_hover_value(currency)}"
+                f"<extra>{display_name}</extra>"
+            ),
+        )
     _money_axis(figure, currency)
     _show(figure)
 
@@ -86,7 +118,7 @@ def _money_bar(
     horizontal: bool = False,
 ) -> None:
     if frame.empty:
-        _empty(f"No data is available for {title.lower()}.")
+        _empty(title, f"No data is available for {title.lower()}.")
         return
     if horizontal:
         figure = px.bar(
@@ -107,6 +139,21 @@ def _money_bar(
             labels={category: category_label, value: f"Amount ({currency})"},
             hover_data=[column for column in ("orders", "units_sold") if column in frame],
         )
+    category_coordinate = "y" if horizontal else "x"
+    money_hover = (
+        currency_hover_value(currency, coordinate="x")
+        if horizontal
+        else currency_hover_value(currency)
+    )
+    hover_lines = [
+        f"{category_label}: %{{{category_coordinate}}}",
+        f"Amount: {money_hover}",
+    ]
+    custom_columns = [column for column in ("orders", "units_sold") if column in frame]
+    for index, column in enumerate(custom_columns):
+        label = "Orders" if column == "orders" else "Units sold"
+        hover_lines.append(f"{label}: %{{customdata[{index}]:,.0f}}")
+    figure.update_traces(hovertemplate="<br>".join(hover_lines) + "<extra></extra>")
     _money_axis(figure, currency, horizontal=horizontal)
     _show(figure)
 
@@ -164,28 +211,50 @@ def render_dashboard_charts(data: DashboardChartData, currency: str) -> None:
     fourth = st.columns(2)
     with fourth[0]:
         if data.inventory_risk.empty:
-            _empty("No inventory-risk data is available for the selected filters.")
+            _empty(
+                "Inventory-risk distribution",
+                "No inventory-risk data is available for the selected filters.",
+            )
         else:
-            _show(
-                px.pie(
-                    data.inventory_risk,
-                    names="inventory_status",
-                    values="products",
-                    hole=0.55,
-                    title="Inventory-risk distribution",
-                    hover_data=["products"],
+            figure = px.pie(
+                data.inventory_risk,
+                names="inventory_status",
+                values="products",
+                hole=0.55,
+                title="Inventory-risk distribution",
+                labels={"inventory_status": "Inventory status", "products": "Products"},
+            )
+            figure.update_traces(
+                hovertemplate=(
+                    "Inventory status: %{label}<br>Products: %{value:,.0f}"
+                    "<br>Share: %{percent:.1%}<extra></extra>"
                 )
             )
+            _show(figure)
     with fourth[1]:
         if data.return_reasons.empty:
-            _empty("No returns were recorded for the selected filters.")
+            _empty("Return reasons", "No returns were recorded for the selected filters.")
         else:
             figure = px.bar(
                 data.return_reasons,
                 x="return_reason",
                 y="returned_quantity",
                 title="Return reasons",
-                labels={"return_reason": "Reason", "returned_quantity": "Returned units"},
+                labels={
+                    "return_reason": "Reason",
+                    "returned_quantity": "Returned units",
+                    "returns": "Returns",
+                    "refund_amount": f"Refund amount ({currency})",
+                },
                 hover_data=["returns", "refund_amount"],
+            )
+            figure.update_traces(
+                hovertemplate=(
+                    "Reason: %{x}<br>Returned units: %{y:,.0f}"
+                    "<br>Returns: %{customdata[0]:,.0f}"
+                    "<br>Refund amount: "
+                    f"{currency_hover_value(currency, coordinate='customdata[1]')}"
+                    "<extra></extra>"
+                )
             )
             _show(figure)
