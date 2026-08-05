@@ -30,29 +30,48 @@ def _show(figure: go.Figure) -> None:
 
 def revenue_over_time(frame: pd.DataFrame, currency: str) -> None:
     if frame.empty:
-        _empty("Revenue over time", "No revenue data is available for the selected filters.")
+        _empty(
+            "Revenue and gross-profit trend",
+            "No revenue or gross-profit data is available for the selected filters.",
+        )
+        return
+    measures = [
+        column for column in ("net_revenue", "gross_profit") if column in frame.columns
+    ]
+    if not measures:
+        _empty(
+            "Revenue and gross-profit trend",
+            "No revenue or gross-profit data is available for the selected filters.",
+        )
         return
     figure = px.line(
         frame,
         x="date",
-        y="net_revenue",
+        y=measures,
         markers=True,
-        title="Revenue over time",
+        title="Revenue and gross-profit trend",
         labels={
             "date": "Date",
-            "net_revenue": f"Net revenue ({currency})",
+            "value": f"Amount ({currency})",
+            "variable": "Metric",
             "orders": "Orders",
             "units_sold": "Units sold",
         },
         hover_data=["orders", "units_sold"],
     )
-    figure.update_traces(
-        hovertemplate=(
-            f"Date: %{{x|%d %b %Y}}<br>Net revenue: {currency_hover_value(currency)}"
-            "<br>Orders: %{customdata[0]:,.0f}<br>Units sold: %{customdata[1]:,.0f}"
-            "<extra></extra>"
+    measure_names = {"net_revenue": "Net revenue", "gross_profit": "Gross profit"}
+    for trace in figure.data:
+        display_name = measure_names.get(str(trace.name), str(trace.name).replace("_", " ").title())
+        trace.update(
+            name=display_name,
+            legendgroup=display_name,
+            hovertemplate=(
+                f"Date: %{{x|%d %b %Y}}<br>{display_name}: "
+                f"{currency_hover_value(currency)}"
+                "<br>Orders: %{customdata[0]:,.0f}<br>Units sold: %{customdata[1]:,.0f}"
+                f"<extra>{display_name}</extra>"
+            ),
         )
-    )
     _money_axis(figure, currency)
     _show(figure)
 
@@ -164,9 +183,6 @@ def render_dashboard_charts(data: DashboardChartData, currency: str) -> None:
     with first[0]:
         revenue_over_time(data.revenue_over_time, currency)
     with first[1]:
-        current_vs_previous(data.current_vs_previous, currency)
-    second = st.columns(2)
-    with second[0]:
         _money_bar(
             data.revenue_by_category,
             category="category",
@@ -175,7 +191,8 @@ def render_dashboard_charts(data: DashboardChartData, currency: str) -> None:
             category_label="Category",
             currency=currency,
         )
-    with second[1]:
+    second = st.columns(2)
+    with second[0]:
         product_label = (
             "product_name" if "product_name" in data.top_products_by_profit else "product_id"
         )
@@ -183,55 +200,22 @@ def render_dashboard_charts(data: DashboardChartData, currency: str) -> None:
             data.top_products_by_profit,
             category=product_label,
             value="gross_profit",
-            title="Top ten products by gross profit",
+            title="Product performance by gross profit",
             category_label="Product",
             currency=currency,
             horizontal=True,
         )
-    third = st.columns(2)
-    with third[0]:
-        _money_bar(
-            data.sales_by_country,
-            category="country",
-            value="net_revenue",
-            title="Sales by country",
-            category_label="Country",
-            currency=currency,
-            horizontal=True,
-        )
-    with third[1]:
+    with second[1]:
         _money_bar(
             data.sales_by_channel,
             category="sales_channel",
             value="net_revenue",
-            title="Sales-channel performance",
+            title="Sales-channel distribution",
             category_label="Sales channel",
             currency=currency,
         )
-    fourth = st.columns(2)
-    with fourth[0]:
-        if data.inventory_risk.empty:
-            _empty(
-                "Inventory-risk distribution",
-                "No inventory-risk data is available for the selected filters.",
-            )
-        else:
-            figure = px.pie(
-                data.inventory_risk,
-                names="inventory_status",
-                values="products",
-                hole=0.55,
-                title="Inventory-risk distribution",
-                labels={"inventory_status": "Inventory status", "products": "Products"},
-            )
-            figure.update_traces(
-                hovertemplate=(
-                    "Inventory status: %{label}<br>Products: %{value:,.0f}"
-                    "<br>Share: %{percent:.1%}<extra></extra>"
-                )
-            )
-            _show(figure)
-    with fourth[1]:
+    third = st.columns(2)
+    with third[0]:
         if data.return_reasons.empty:
             _empty("Return reasons", "No returns were recorded for the selected filters.")
         else:
@@ -258,3 +242,38 @@ def render_dashboard_charts(data: DashboardChartData, currency: str) -> None:
                 )
             )
             _show(figure)
+    with third[1]:
+        if data.inventory_risk.empty:
+            _empty(
+                "Inventory status",
+                "No inventory-risk data is available for the selected filters.",
+            )
+        else:
+            figure = px.pie(
+                data.inventory_risk,
+                names="inventory_status",
+                values="products",
+                hole=0.55,
+                title="Inventory status",
+                labels={"inventory_status": "Inventory status", "products": "Products"},
+            )
+            figure.update_traces(
+                hovertemplate=(
+                    "Inventory status: %{label}<br>Products: %{value:,.0f}"
+                    "<br>Share: %{percent:.1%}<extra></extra>"
+                )
+            )
+            _show(figure)
+    fourth = st.columns(2)
+    with fourth[0]:
+        current_vs_previous(data.current_vs_previous, currency)
+    with fourth[1]:
+        _money_bar(
+            data.sales_by_country,
+            category="country",
+            value="net_revenue",
+            title="Sales by country",
+            category_label="Country",
+            currency=currency,
+            horizontal=True,
+        )

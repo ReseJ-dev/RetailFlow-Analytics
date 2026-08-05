@@ -32,6 +32,7 @@ def _chart_data(*, empty: bool = False) -> DashboardChartData:
             {
                 "date": pd.to_datetime(["2026-01-01", "2026-01-02"]),
                 "net_revenue": [125.5, 240.0],
+                "gross_profit": [50.0, 95.0],
                 "orders": [2, 3],
                 "units_sold": [3, 5],
             }
@@ -150,10 +151,15 @@ def test_all_dashboard_charts_share_theme_config_and_readable_hovers(monkeypatch
         assert kwargs["config"] == get_plotly_config()
         assert kwargs["width"] == "stretch"
 
-    comparison = rendered[1][0]
+    comparison = next(
+        figure
+        for figure, _ in rendered
+        if figure.layout.title.text == "Current vs previous period"
+    )
     assert [trace.name for trace in comparison.data] == ["Current period", "Previous period"]
     assert all("current_period" not in trace.hovertemplate for trace in comparison.data)
     assert tuple(rendered[0][0].data[0].y) == (125.5, 240.0)
+    assert tuple(rendered[0][0].data[1].y) == (50.0, 95.0)
 
 
 def test_all_dashboard_charts_render_safe_empty_states(monkeypatch: Any) -> None:

@@ -42,7 +42,9 @@ def render_kpi_card(card: DashboardKPI, currency: str) -> None:
         help=card.caption,
         border=True,
     )
-    st.caption(
-        f"Direction: {card.direction.value}. Comparison type: "
-        f"{card.comparison_type.value}. {card.caption}"
-    )
+    movement = {
+        "positive": "Positive movement",
+        "negative": "Negative movement",
+        "neutral": "No material movement",
+    }[card.direction.value]
+    st.caption(f"{movement}. {card.caption}")

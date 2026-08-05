@@ -5,6 +5,7 @@ from datetime import date, datetime
 import streamlit as st
 from streamlit.delta_generator import DeltaGenerator
 
+from app.components.ui import StatusVariant, status_badge
 from app.services.dashboard_service import DashboardFilterOptions, DashboardFilters
 from app.state import SessionState, StateKey
 
@@ -16,6 +17,8 @@ _WIDGET_KEYS = {
     "warehouses": "dashboard_filter_warehouses",
     "currencies": "dashboard_filter_currencies",
     "statuses": "dashboard_filter_statuses",
+    "suppliers": "dashboard_filter_suppliers",
+    "products": "dashboard_filter_products",
 }
 
 
@@ -65,89 +68,113 @@ def _multiselect(
 
 
 def render_filter_bar(state: SessionState, options: DashboardFilterOptions) -> DashboardFilters:
-    """Render all filters, store immutable selections, and support a clean reset."""
+    """Render supported filters, store immutable selections, and support a clean reset."""
     current = _current(state)
-    st.subheader("Filters")
-    top = st.columns([3, 1])
-    with top[1]:
-        st.button(
-            "Reset Filters",
-            on_click=_reset_widgets,
-            args=(state, options),
-            width="stretch",
+    with st.container(border=True):
+        heading, reset = st.columns([4, 1])
+        with heading:
+            st.markdown("**Dashboard filters**")
+            st.caption("Every selection is applied to the shared dashboard result.")
+        with reset:
+            st.button(
+                "Reset Filters",
+                on_click=_reset_widgets,
+                args=(state, options),
+                width="stretch",
+            )
+
+        default_dates: list[date | datetime | str | None] = []
+        if options.minimum_date is not None and options.maximum_date is not None:
+            default_dates = [
+                current.date_from or options.minimum_date,
+                current.date_to or options.maximum_date,
+            ]
+        selected_dates: object = ()
+        first_row = st.columns(3)
+        if options.minimum_date is not None and options.maximum_date is not None:
+            if _WIDGET_KEYS["dates"] in state:
+                selected_dates = first_row[0].date_input(
+                    "Reporting period",
+                    min_value=options.minimum_date,
+                    max_value=options.maximum_date,
+                    key=_WIDGET_KEYS["dates"],
+                )
+            else:
+                selected_dates = first_row[0].date_input(
+                    "Reporting period",
+                    value=default_dates,
+                    min_value=options.minimum_date,
+                    max_value=options.maximum_date,
+                    key=_WIDGET_KEYS["dates"],
+                )
+        else:
+            first_row[0].caption("Reporting period is unavailable for this dataset.")
+        countries = _multiselect(
+            first_row[1],
+            "Country",
+            options.countries,
+            _valid(current.countries, options.countries),
+            _WIDGET_KEYS["countries"],
+            state,
         )
-    default_dates: list[date | datetime | str | None] = []
-    if options.minimum_date is not None and options.maximum_date is not None:
-        default_dates = [
-            current.date_from or options.minimum_date,
-            current.date_to or options.maximum_date,
-        ]
-    selected_dates: object
-    if _WIDGET_KEYS["dates"] in state:
-        selected_dates = top[0].date_input(
-            "Date range",
-            min_value=options.minimum_date,
-            max_value=options.maximum_date,
-            key=_WIDGET_KEYS["dates"],
+        categories = _multiselect(
+            first_row[2],
+            "Product category",
+            options.categories,
+            _valid(current.categories, options.categories),
+            _WIDGET_KEYS["categories"],
+            state,
         )
-    else:
-        selected_dates = top[0].date_input(
-            "Date range",
-            value=default_dates,
-            min_value=options.minimum_date,
-            max_value=options.maximum_date,
-            key=_WIDGET_KEYS["dates"],
+        second_row = st.columns(4)
+        suppliers = _multiselect(
+            second_row[0],
+            "Supplier",
+            options.suppliers,
+            _valid(current.suppliers, options.suppliers),
+            _WIDGET_KEYS["suppliers"],
+            state,
         )
-    first_row = st.columns(4)
-    countries = _multiselect(
-        first_row[0],
-        "Country",
-        options.countries,
-        _valid(current.countries, options.countries),
-        _WIDGET_KEYS["countries"],
-        state,
-    )
-    categories = _multiselect(
-        first_row[1],
-        "Product category",
-        options.categories,
-        _valid(current.categories, options.categories),
-        _WIDGET_KEYS["categories"],
-        state,
-    )
-    channels = _multiselect(
-        first_row[2],
-        "Sales channel",
-        options.sales_channels,
-        _valid(current.sales_channels, options.sales_channels),
-        _WIDGET_KEYS["channels"],
-        state,
-    )
-    warehouses = _multiselect(
-        first_row[3],
-        "Warehouse",
-        options.warehouses,
-        _valid(current.warehouses, options.warehouses),
-        _WIDGET_KEYS["warehouses"],
-        state,
-    )
-    second_row = st.columns(2)
-    currencies = _multiselect(
-        second_row[0],
-        "Currency",
-        options.currencies,
-        _valid(current.currencies, options.currencies),
-        _WIDGET_KEYS["currencies"],
-        state,
-    )
-    statuses = _multiselect(
-        second_row[1],
-        "Order status",
-        options.order_statuses,
-        _valid(current.order_statuses, options.order_statuses),
-        _WIDGET_KEYS["statuses"],
-        state,
-    )
+        channels = _multiselect(
+            second_row[1],
+            "Sales channel",
+            options.sales_channels,
+            _valid(current.sales_channels, options.sales_channels),
+            _WIDGET_KEYS["channels"],
+            state,
+        )
+        warehouses = _multiselect(
+            second_row[2],
+            "Warehouse",
+            options.warehouses,
+            _valid(current.warehouses, options.warehouses),
+            _WIDGET_KEYS["warehouses"],
+            state,
+        )
+        products = _multiselect(
+            second_row[3],
+            "Product",
+            options.products,
+            _valid(current.products, options.products),
+            _WIDGET_KEYS["products"],
+            state,
+        )
+        third_row = st.columns(2)
+        currencies = _multiselect(
+            third_row[0],
+            "Currency",
+            options.currencies,
+            _valid(current.currencies, options.currencies),
+            _WIDGET_KEYS["currencies"],
+            state,
+        )
+        statuses = _multiselect(
+            third_row[1],
+            "Order status",
+            options.order_statuses,
+            _valid(current.order_statuses, options.order_statuses),
+            _WIDGET_KEYS["statuses"],
+            state,
+        )
     date_from, date_to = _date_range(selected_dates)
     if date_from == options.minimum_date and date_to == options.maximum_date:
         date_from = date_to = None
@@ -160,7 +187,14 @@ def render_filter_bar(state: SessionState, options: DashboardFilterOptions) -> D
         warehouses=tuple(warehouses),
         currencies=tuple(currencies),
         order_statuses=tuple(statuses),
+        suppliers=tuple(suppliers),
+        products=tuple(products),
     )
     state[StateKey.ACTIVE_FILTERS.value] = selected
-    st.caption(f"Active filters: {selected.active_count}")
+    status_badge(
+        f"{selected.active_count} active filter"
+        f"{'s' if selected.active_count != 1 else ''}",
+        StatusVariant.INFORMATION if selected.active_count else StatusVariant.NEUTRAL,
+        accessible_label=f"Active dashboard filters: {selected.active_count}",
+    )
     return selected

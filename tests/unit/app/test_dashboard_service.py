@@ -27,6 +27,7 @@ def _processing_result():
     inventory.dataframe["last_restock_date"] = ["2024-12-01"]
     products = loaded["products"]
     products.dataframe["category"] = ["Office"]
+    products.dataframe["supplier"] = ["Supplier A"]
     return run_processing(state)
 
 
@@ -40,6 +41,8 @@ def test_filter_options_are_derived_from_processed_data() -> None:
     assert options.warehouses == ("Nicosia",)
     assert options.currencies == ("EUR",)
     assert options.order_statuses == ()
+    assert options.suppliers == ("Supplier A",)
+    assert options.products == ("P-1",)
 
 
 def test_dashboard_reuses_analytics_and_builds_one_consistent_result() -> None:
@@ -112,6 +115,30 @@ def test_warehouse_filter_scopes_orders_and_inventory_by_product() -> None:
     assert missing.kpis.orders == 0
     assert missing.inventory_metrics.empty
     assert not missing.recommendations
+
+
+def test_supplier_and_product_filters_scope_every_dashboard_dataset() -> None:
+    processing = _processing_result()
+
+    selected = calculate_dashboard(
+        processing.processed_orders,
+        processing.inventory,
+        processing.returns,
+        DashboardFilters(suppliers=("Supplier A",), products=("P-1",)),
+    )
+    missing = calculate_dashboard(
+        processing.processed_orders,
+        processing.inventory,
+        processing.returns,
+        DashboardFilters(suppliers=("Missing supplier",)),
+    )
+
+    assert selected.kpis.orders == 1
+    assert selected.filtered_summary.filtered_inventory_rows == 1
+    assert selected.filtered_summary.active_filter_count == 2
+    assert missing.kpis.orders == 0
+    assert missing.inventory_metrics.empty
+    assert missing.returns_analytics.enriched_returns.empty
 
 
 def test_return_rate_reduction_is_a_positive_percentage_point_change() -> None:

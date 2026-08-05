@@ -40,6 +40,8 @@ class DashboardFilters:
     warehouses: tuple[str, ...] = ()
     currencies: tuple[str, ...] = ()
     order_statuses: tuple[str, ...] = ()
+    suppliers: tuple[str, ...] = ()
+    products: tuple[str, ...] = ()
 
     @property
     def active_count(self) -> int:
@@ -51,6 +53,8 @@ class DashboardFilters:
             self.warehouses,
             self.currencies,
             self.order_statuses,
+            self.suppliers,
+            self.products,
         )
         return int(self.date_from is not None or self.date_to is not None) + sum(
             bool(value) for value in dimensions
@@ -69,6 +73,8 @@ class DashboardFilterOptions:
     warehouses: tuple[str, ...]
     currencies: tuple[str, ...]
     order_statuses: tuple[str, ...]
+    suppliers: tuple[str, ...] = ()
+    products: tuple[str, ...] = ()
 
 
 class ComparisonDirection(StrEnum):
@@ -181,6 +187,15 @@ def derive_filter_options(orders: pd.DataFrame, inventory: pd.DataFrame) -> Dash
         warehouses=_values(inventory, "warehouse"),
         currencies=_values(orders, "currency"),
         order_statuses=_values(orders, "order_status"),
+        suppliers=tuple(
+            sorted(
+                set(_values(orders, "supplier", "product_supplier"))
+                | set(_values(inventory, "product_supplier", "supplier"))
+            )
+        ),
+        products=tuple(
+            sorted(set(_values(orders, "product_id")) | set(_values(inventory, "product_id")))
+        ),
     )
 
 
@@ -209,6 +224,43 @@ def _warehouse_scope(
     selected_orders = orders.loc[orders["product_id"].astype(str).isin(product_ids)].copy()
     selected_returns = returns.loc[returns["product_id"].astype(str).isin(product_ids)].copy()
     return selected_orders, selected_inventory, selected_returns
+
+
+def _catalogue_scope(
+    orders: pd.DataFrame,
+    inventory: pd.DataFrame,
+    returns: pd.DataFrame,
+    suppliers: tuple[str, ...],
+    products: tuple[str, ...],
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    """Scope all facts through canonical product IDs for supplier/product filters."""
+    if not suppliers and not products:
+        return orders.copy(), inventory.copy(), returns.copy()
+    selected_product_ids = set(products) if products else None
+    if suppliers:
+        supplier_product_ids: set[str] = set()
+        for frame, candidates in (
+            (orders, ("supplier", "product_supplier")),
+            (inventory, ("product_supplier", "supplier")),
+        ):
+            supplier_column = next((column for column in candidates if column in frame), None)
+            if supplier_column is None or "product_id" not in frame:
+                continue
+            matching = frame.loc[frame[supplier_column].astype(str).isin(suppliers), "product_id"]
+            supplier_product_ids.update(matching.astype(str))
+        selected_product_ids = (
+            supplier_product_ids
+            if selected_product_ids is None
+            else selected_product_ids & supplier_product_ids
+        )
+    accepted = selected_product_ids or set()
+
+    def scoped(frame: pd.DataFrame) -> pd.DataFrame:
+        if "product_id" not in frame:
+            return frame.iloc[0:0].copy()
+        return frame.loc[frame["product_id"].astype(str).isin(accepted)].copy()
+
+    return scoped(orders), scoped(inventory), scoped(returns)
 
 
 def _effective_period(
@@ -399,8 +451,15 @@ def calculate_dashboard(
     """Calculate one internally consistent dashboard result from stable frame inputs."""
     selected = filters or DashboardFilters()
     threshold_input = _threshold_input(inventory_thresholds)
+    catalogue_orders, catalogue_inventory, catalogue_returns = _catalogue_scope(
+        orders,
+        inventory,
+        returns,
+        selected.suppliers,
+        selected.products,
+    )
     scoped_orders, scoped_inventory, scoped_returns = _warehouse_scope(
-        orders, inventory, returns, selected.warehouses
+        catalogue_orders, catalogue_inventory, catalogue_returns, selected.warehouses
     )
     analytics_filters = _analytics_filters(selected)
     start, end = _effective_period(scoped_orders, selected)
