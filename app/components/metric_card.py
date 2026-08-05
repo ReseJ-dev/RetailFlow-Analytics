@@ -1,8 +1,8 @@
-"""Small metric-card component."""
+"""Backward-compatible metric-card adapter."""
 
-import streamlit as st
+from app.components.ui import metric_card
 
 
 def render_metric_card(label: str, value: str | int, *, help_text: str | None = None) -> None:
     """Render an accessible metric with an optional explanatory tooltip."""
-    st.metric(label=label, value=value, help=help_text)
+    metric_card(label, value, help_text=help_text)

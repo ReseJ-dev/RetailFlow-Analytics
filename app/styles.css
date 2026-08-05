@@ -252,7 +252,6 @@ textarea::placeholder {
 
 /* Reusable semantic states. Text and symbols accompany every colour state. */
 
-.rf-status,
 .rf-alert {
   display: flex;
   align-items: flex-start;
@@ -263,10 +262,53 @@ textarea::placeholder {
   font-weight: 600;
 }
 
+.rf-status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--rf-layout-space-1);
+  width: fit-content;
+  border: 1px solid currentcolor;
+  border-radius: 999px;
+  padding: var(--rf-layout-space-1) var(--rf-layout-space-2);
+  font-size: var(--rf-type-supporting-size);
+  font-weight: 700;
+  line-height: var(--rf-type-supporting-line-height);
+}
+
 .rf-status::before,
 .rf-alert::before {
   flex: 0 0 auto;
   font-weight: 700;
+}
+
+.rf-semantic-copy {
+  display: flex;
+  flex-direction: column;
+  gap: var(--rf-layout-space-1);
+}
+
+.rf-semantic-title,
+.rf-semantic-message {
+  color: inherit;
+}
+
+.rf-semantic-title {
+  font-weight: 700;
+}
+
+.rf-semantic-message {
+  font-weight: 500;
+}
+
+.rf-status--neutral,
+.rf-alert--neutral {
+  background: var(--rf-color-disabled-background);
+  color: var(--rf-color-secondary-text);
+}
+
+.rf-status--neutral::before,
+.rf-alert--neutral::before {
+  content: "•";
 }
 
 .rf-status--success,

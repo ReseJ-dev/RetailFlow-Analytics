@@ -4,6 +4,7 @@ from datetime import datetime
 
 import streamlit as st
 
+from app.components.ui import page_header
 from app.state import ApplicationStatus
 
 
@@ -47,11 +48,10 @@ def render_page_header(
     status: ApplicationStatus | str,
 ) -> None:
     """Render a compact title, description, and optional workflow context."""
-    st.caption(f"RetailFlow / {page_title}")
-    st.title(page_title)
-    st.write(description)
-    render_page_context(
-        reporting_period=reporting_period,
-        last_successful_run=last_successful_run,
-        status=status,
-    )
+    context: list[str] = []
+    if reporting_period:
+        context.append(f"Period: {reporting_period}")
+    if last_successful_run:
+        context.append(f"Last run: {_display_datetime(last_successful_run)}")
+    context.append(f"Status: {_display_status(status)}")
+    page_header(page_title, description, context=context)
