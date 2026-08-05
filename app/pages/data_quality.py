@@ -4,15 +4,15 @@ from collections.abc import Mapping
 
 import streamlit as st
 
-from app.components.empty_state import render_empty_state
-from app.components.header import render_page_header
 from app.components.issue_group import render_issue_groups
 from app.components.issue_table import render_issue_table
 from app.components.layout import navigate_and_rerun
 from app.components.processing_progress import create_processing_progress
 from app.components.quality_summary import render_quality_summary
+from app.components.ui import StatusVariant, callout, empty_state, page_header, section_header
 from app.services.processing_service import (
     build_quality_summary,
+    combined_validation_result,
     generate_quality_report,
     group_issues,
     has_blocking_structural_errors,
@@ -22,7 +22,7 @@ from app.services.processing_service import (
 from app.state import ApplicationStatus, AppPage, SessionState, StateKey
 from retailflow.common.exceptions import RetailFlowError
 from retailflow.models import ProcessingResult
-from retailflow.validation import ValidationSeverity
+from retailflow.validation import CombinedValidationResult, ValidationSeverity
 
 
 def _actions(state: SessionState) -> dict[str, str]:
@@ -69,12 +69,14 @@ def _continue_to_dashboard(state: SessionState, result: ProcessingResult) -> Non
     navigate_and_rerun(state, AppPage.DASHBOARD)
 
 
-def _render_review_actions(state: SessionState, result: ProcessingResult) -> None:
-    st.subheader("Review decision")
+def _review_state(
+    state: SessionState,
+    result: ProcessingResult,
+) -> tuple[bool, bool, bool, bool]:
     structural_blocker = has_blocking_structural_errors(result)
-    warnings = [
-        issue for issue in result.validation_issues if issue.severity is ValidationSeverity.WARNING
-    ]
+    warnings_present = any(
+        issue.severity is ValidationSeverity.WARNING for issue in result.validation_issues
+    )
     invalid_issues = [issue for issue in result.validation_issues if not issue.row_can_continue]
     actions = _actions(state)
     exclusions_recorded = all(
@@ -82,17 +84,73 @@ def _render_review_actions(state: SessionState, result: ProcessingResult) -> Non
         for occurrence, issue in enumerate(result.validation_issues)
         if not issue.row_can_continue
     )
+    warnings_confirmed = bool(state[StateKey.WARNINGS_CONFIRMED.value]) or not warnings_present
+    may_continue = (
+        not structural_blocker
+        and warnings_confirmed
+        and (not invalid_issues or exclusions_recorded)
+    )
+    return structural_blocker, warnings_present, exclusions_recorded, may_continue
+
+
+def _render_continuation_status(
+    *,
+    structural_blocker: bool,
+    warnings_present: bool,
+    warnings_confirmed: bool,
+    exclusions_recorded: bool,
+    invalid_issues_present: bool,
+) -> None:
     if structural_blocker:
-        st.error(
-            "Blocking structural errors must be corrected before this dataset can continue. "
-            "Return to Upload Data and update the source files or column mappings."
+        callout(
+            "Dashboard unavailable — blocking structural errors",
+            "Correct the source files or column mappings and validate again. "
+            "Dataset-level blocking errors cannot be bypassed or excluded.",
+            StatusVariant.ERROR,
         )
-    if warnings:
+    elif invalid_issues_present and not exclusions_recorded:
+        callout(
+            "Dashboard unavailable — exclusions required",
+            "Mark invalid rows as excluded before continuing. Reviewable warnings remain "
+            "separate from these invalid rows.",
+            StatusVariant.WARNING,
+        )
+    elif warnings_present and not warnings_confirmed:
+        callout(
+            "Dashboard unavailable — warning confirmation required",
+            "Review the warning rows and explicitly confirm them before continuing.",
+            StatusVariant.WARNING,
+        )
+    else:
+        callout(
+            "Dashboard available",
+            "Blocking checks and required review decisions are complete. You may continue.",
+            StatusVariant.SUCCESS,
+        )
+
+
+def _render_review_actions(state: SessionState, result: ProcessingResult) -> None:
+    section_header(
+        "Review decision",
+        "Blocking errors require source correction; warnings may continue only after review.",
+    )
+    structural_blocker, warnings_present, exclusions_recorded, may_continue = _review_state(
+        state, result
+    )
+    invalid_issues = [issue for issue in result.validation_issues if not issue.row_can_continue]
+    if warnings_present:
         st.checkbox(
             "I reviewed the warnings and confirm that processing may continue.",
             key=StateKey.WARNINGS_CONFIRMED.value,
         )
-    warnings_confirmed = bool(state[StateKey.WARNINGS_CONFIRMED.value]) or not warnings
+    warnings_confirmed = bool(state[StateKey.WARNINGS_CONFIRMED.value]) or not warnings_present
+    _render_continuation_status(
+        structural_blocker=structural_blocker,
+        warnings_present=warnings_present,
+        warnings_confirmed=warnings_confirmed,
+        exclusions_recorded=exclusions_recorded,
+        invalid_issues_present=bool(invalid_issues),
+    )
     columns = st.columns(4)
     if columns[0].button(
         "Exclude Invalid Rows",
@@ -100,21 +158,16 @@ def _render_review_actions(state: SessionState, result: ProcessingResult) -> Non
         width="stretch",
     ):
         _mark_excluded_rows(state, result)
-    continue_disabled = (
-        structural_blocker
-        or not warnings_confirmed
-        or (bool(invalid_issues) and not exclusions_recorded)
-    )
     if columns[1].button(
-        "Continue with Warnings",
+        "Continue to Dashboard",
         type="primary",
-        disabled=continue_disabled,
+        disabled=not may_continue,
         width="stretch",
     ):
         _continue_to_dashboard(state, result)
     report_bytes = generate_quality_report(
         result,
-        actions=actions,
+        actions=_actions(state),
         import_settings=_import_settings(state),
     )
     columns[2].download_button(
@@ -123,39 +176,79 @@ def _render_review_actions(state: SessionState, result: ProcessingResult) -> Non
         file_name="data_quality_report.xlsx",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         width="stretch",
+        help="Includes summary, detailed issues, and excluded rows when export is enabled.",
     )
     if columns[3].button("Return to Upload", width="stretch"):
         navigate_and_rerun(state, AppPage.UPLOAD_DATA)
+    st.caption(
+        "The Excel error report preserves issue-level source traceability and includes the "
+        "Excluded Rows worksheet when allowed by import settings."
+    )
+
+
+def _validation_result(
+    state: SessionState,
+    processing: ProcessingResult,
+) -> CombinedValidationResult:
+    value = state[StateKey.VALIDATION_RESULT.value]
+    return (
+        value
+        if isinstance(value, CombinedValidationResult)
+        else combined_validation_result(processing)
+    )
+
+
+def _blocking_error_count(result: ProcessingResult) -> int:
+    return sum(
+        issue.severity is ValidationSeverity.ERROR
+        and issue.row_number is None
+        and not issue.row_can_continue
+        for issue in result.validation_issues
+    )
+
+
+def _render_validated_result(state: SessionState, result: ProcessingResult) -> None:
+    validation = _validation_result(state, result)
+    warning_rows = sum(item.warning_row_count for item in validation.dataset_results)
+    render_quality_summary(
+        build_quality_summary(result),
+        clean_rows=validation.valid_row_count,
+        warning_rows=warning_rows,
+        blocking_errors=_blocking_error_count(result),
+    )
+    st.divider()
+    render_issue_groups(group_issues(result.validation_issues))
+    st.divider()
+    render_issue_table(result.validation_issues, _actions(state))
+    st.divider()
+    _render_review_actions(state, result)
 
 
 def render_data_quality(state: SessionState) -> None:
-    """Run validation when requested and render the resulting quality review."""
-    render_page_header(
-        page_title="Data Quality",
-        description=(
-            "Validate source structure, transformations, and business rules before analysis."
-        ),
-        reporting_period=state[StateKey.SELECTED_REPORTING_PERIOD.value],
-        last_successful_run=state[StateKey.LAST_SUCCESSFUL_RUN.value],
-        status=state[StateKey.APPLICATION_STATUS.value],
+    """Run validation only on request and render filtered saved results."""
+    page_header(
+        "Data Quality",
+        "Review data health, source-level issues, exclusions, and continuation readiness.",
     )
     result_value = state[StateKey.PROCESSING_RESULT.value]
     if not isinstance(result_value, ProcessingResult):
-        render_empty_state(
+        empty_state(
             "Validation required",
-            "No validated dataset is available. Upload and validate your source files first.",
+            "No validated dataset is available. Upload the required sources, then start "
+            "validation to create a quality review.",
         )
         loaded = state[StateKey.LOADED_DATASETS.value]
-        if isinstance(loaded, Mapping) and loaded and st.button("Start Validation", type="primary"):
+        action_columns = st.columns([1, 1, 3])
+        if (
+            isinstance(loaded, Mapping)
+            and loaded
+            and action_columns[0].button("Start Validation", type="primary")
+        ):
             _run_validation(state)
-        if st.button("Return to Upload"):
+        if action_columns[1].button("Return to Upload"):
             navigate_and_rerun(state, AppPage.UPLOAD_DATA)
         return
-
-    render_quality_summary(build_quality_summary(result_value))
-    render_issue_groups(group_issues(result_value.validation_issues))
-    render_issue_table(result_value.validation_issues, _actions(state))
-    _render_review_actions(state, result_value)
+    _render_validated_result(state, result_value)
 
 
 __all__ = ["render_data_quality"]
