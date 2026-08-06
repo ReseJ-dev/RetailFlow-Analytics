@@ -7,12 +7,13 @@ from pathlib import Path
 
 import streamlit as st
 
-from app.components.layout import load_local_css, render_app_shell, render_placeholder
+from app.components.layout import load_local_css, render_app_shell
 from app.pages.dashboard import render_dashboard
 from app.pages.data_quality import render_data_quality
 from app.pages.generate_report import render_generate_report
 from app.pages.overview import render_overview
 from app.pages.run_history import render_run_history
+from app.pages.settings import render_settings
 from app.pages.upload_data import render_upload_data
 from app.state import AppPage, initialize_state
 
@@ -39,8 +40,8 @@ def _render_application() -> None:
         render_generate_report(st.session_state)
     elif page is AppPage.RUN_HISTORY:
         render_run_history(st.session_state)
-    else:
-        render_placeholder(page, st.session_state)
+    elif page is AppPage.SETTINGS:
+        render_settings(st.session_state)
 
 
 def main() -> None:

@@ -76,6 +76,7 @@ SECONDARY_NAVIGATION_ITEMS = (
         AppPage.SETTINGS,
         ":material/settings:",
         "Manage report and validation preferences.",
+        True,
     ),
 )
 
