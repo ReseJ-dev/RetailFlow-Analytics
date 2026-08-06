@@ -291,6 +291,11 @@ def _validate_logo(logo: LogoUpload) -> None:
         raise ReportServiceError("The uploaded company logo is not a valid PNG or JPEG file.")
 
 
+def validate_logo_upload(logo: LogoUpload) -> None:
+    """Validate an uploaded logo using the same rules as report generation."""
+    _validate_logo(logo)
+
+
 def _emit(callback: ReportProgressCallback | None, step: int) -> None:
     if callback is not None:
         callback(ReportProgressEvent(step, len(_PROGRESS_LABELS), _PROGRESS_LABELS[step - 1]))
@@ -546,5 +551,6 @@ __all__ = [
     "default_report_request",
     "generate_management_report",
     "read_generated_report",
+    "validate_logo_upload",
     "validate_report_request",
 ]
