@@ -155,6 +155,15 @@ def _render_review_actions(state: SessionState, result: ProcessingResult) -> Non
     if columns[0].button(
         "Exclude Invalid Rows",
         disabled=structural_blocker or not invalid_issues,
+        help=(
+            "Structural errors must be corrected in the source data."
+            if structural_blocker
+            else (
+                "No invalid row-level issues require exclusion."
+                if not invalid_issues
+                else "Record blocking row-level issues as excluded from processing."
+            )
+        ),
         width="stretch",
     ):
         _mark_excluded_rows(state, result)
@@ -162,6 +171,11 @@ def _render_review_actions(state: SessionState, result: ProcessingResult) -> Non
         "Continue to Dashboard",
         type="primary",
         disabled=not may_continue,
+        help=(
+            "Complete the review requirements described above before continuing."
+            if not may_continue
+            else "Open analytics using the reviewed processing result."
+        ),
         width="stretch",
     ):
         _continue_to_dashboard(state, result)

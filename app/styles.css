@@ -17,6 +17,7 @@ body,
 
 [data-testid="stMainBlockContainer"] {
   width: 100%;
+  min-width: 0;
   max-width: var(--rf-layout-content-max-width);
   padding: var(--rf-layout-space-8) var(--rf-layout-desktop-horizontal-padding)
     var(--rf-layout-space-12);
@@ -31,6 +32,7 @@ h6 {
   color: var(--rf-color-primary-text);
   font-family: var(--rf-type-font-family);
   letter-spacing: -0.015em;
+  overflow-wrap: anywhere;
 }
 
 h1 {
@@ -130,6 +132,9 @@ a:hover {
   color: var(--rf-color-primary-text);
   font-family: var(--rf-type-font-family);
   font-weight: 600;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+  white-space: normal;
   transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease,
     box-shadow 120ms ease;
 }
@@ -219,8 +224,17 @@ textarea::placeholder {
 /* Tabs, expanders, alerts, and dataframes ---------------------------------- */
 
 [data-testid="stTabs"] [role="tab"] {
+  min-height: var(--rf-layout-control-height);
   color: var(--rf-color-secondary-text);
   font-weight: 600;
+  white-space: nowrap;
+}
+
+[data-testid="stTabs"] [role="tablist"] {
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
 }
 
 [data-testid="stTabs"] [role="tab"][aria-selected="true"] {
@@ -244,7 +258,10 @@ textarea::placeholder {
 }
 
 [data-testid="stDataFrame"] {
-  overflow: hidden;
+  max-width: 100%;
+  overflow: auto;
+  overscroll-behavior-inline: contain;
+  scrollbar-width: thin;
   border: 1px solid var(--rf-color-border);
   border-radius: var(--rf-layout-control-radius);
   background: var(--rf-color-surface-background);
@@ -260,6 +277,7 @@ textarea::placeholder {
   border-radius: var(--rf-layout-control-radius);
   padding: var(--rf-layout-space-3) var(--rf-layout-space-4);
   font-weight: 600;
+  overflow-wrap: anywhere;
 }
 
 .rf-status {
@@ -273,6 +291,9 @@ textarea::placeholder {
   font-size: var(--rf-type-supporting-size);
   font-weight: 700;
   line-height: var(--rf-type-supporting-line-height);
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  white-space: normal;
 }
 
 .rf-status::before,
@@ -372,10 +393,110 @@ summary:focus-visible,
   outline-offset: 2px;
 }
 
+/* Responsive composition -------------------------------------------------- */
+
+[data-testid="stAppViewContainer"],
+[data-testid="stMain"],
+[data-testid="stVerticalBlock"],
+[data-testid="stHorizontalBlock"],
+[data-testid="column"] {
+  min-width: 0;
+}
+
+[data-testid="stSidebar"] {
+  max-width: min(20rem, 88vw);
+  overflow-x: hidden;
+}
+
+[data-testid="stSidebar"] [data-testid="stMarkdownContainer"],
+[data-testid="stSidebar"] [data-testid="stButton"] button {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+[data-testid="stFileUploaderDropzone"],
+[data-baseweb="select"] > div,
+[data-baseweb="tag"] {
+  max-width: 100%;
+  min-width: 0;
+}
+
+[data-baseweb="tag"] span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.js-plotly-plot,
+.plot-container,
+.svg-container {
+  max-width: 100%;
+}
+
+.modebar-btn {
+  min-width: 2rem;
+  min-height: 2rem;
+}
+
+@media (max-width: 1280px) {
+  [data-testid="stMainBlockContainer"] {
+    padding-right: var(--rf-layout-space-6);
+    padding-left: var(--rf-layout-space-6);
+  }
+}
+
+@media (max-width: 1100px) {
+  [data-testid="stHorizontalBlock"] {
+    flex-wrap: wrap;
+  }
+
+  [data-testid="stHorizontalBlock"] > [data-testid="column"] {
+    min-width: min(100%, 14rem);
+  }
+
+  [data-testid="stHorizontalBlock"] > [data-testid="column"]:has(
+      [data-testid="stPlotlyChart"]
+    ) {
+    min-width: min(100%, 24rem);
+  }
+
+  [data-testid="stHorizontalBlock"] > [data-testid="column"]:has(
+      [data-testid="stFileUploader"]
+    ) {
+    min-width: min(100%, 20rem);
+  }
+}
+
 @media (max-width: 768px) {
   [data-testid="stMainBlockContainer"] {
+    padding-top: var(--rf-layout-space-6);
     padding-right: var(--rf-layout-mobile-horizontal-padding);
     padding-left: var(--rf-layout-mobile-horizontal-padding);
+  }
+
+  h1 {
+    font-size: clamp(1.75rem, 8vw, var(--rf-type-page-title-size));
+  }
+
+  [data-testid="stHorizontalBlock"] > [data-testid="column"] {
+    width: 100%;
+    min-width: 100%;
+    flex-basis: 100%;
+  }
+
+  [data-testid="stFileUploaderDropzone"] {
+    padding: var(--rf-layout-space-3);
+  }
+
+  [data-testid="stDataFrame"] {
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+@media (max-width: 480px) {
+  [data-testid="stMainBlockContainer"] {
+    padding-right: var(--rf-layout-space-3);
+    padding-left: var(--rf-layout-space-3);
   }
 }
 
@@ -470,6 +591,7 @@ summary:focus-visible,
   border-color: transparent;
   box-shadow: none;
   text-align: left;
+  white-space: normal;
 }
 
 [data-testid="stSidebar"] [data-testid="stButton"] button[kind="tertiary"] {

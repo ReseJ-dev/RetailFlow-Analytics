@@ -307,6 +307,11 @@ def render_settings(state: SessionState) -> None:
         "Apply to This Session",
         type="primary",
         disabled=not thresholds_valid,
+        help=(
+            "Correct the inventory threshold order before applying settings."
+            if not thresholds_valid
+            else "Apply these values to the current browser session only."
+        ),
         width="stretch",
     ):
         try:
@@ -328,6 +333,11 @@ def render_settings(state: SessionState) -> None:
     if reset_column.button(
         "Reset Session Overrides",
         disabled=not confirm_reset,
+        help=(
+            "Select the confirmation checkbox before removing session overrides."
+            if not confirm_reset
+            else "Remove settings-page overrides without deleting workflow data."
+        ),
         width="stretch",
     ):
         try:

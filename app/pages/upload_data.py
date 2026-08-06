@@ -291,6 +291,11 @@ def _render_dataset_card(
             read_label,
             key=f"read_{dataset_name}",
             disabled=upload is None or not changed,
+            help=(
+                "Select a new file before reading or replacing this source."
+                if upload is None or not changed
+                else f"Read the selected {label} source."
+            ),
             width="stretch",
         ):
             assert upload is not None
@@ -301,6 +306,11 @@ def _render_dataset_card(
             "Remove",
             key=f"remove_{dataset_name}",
             disabled=upload is None and loaded is None,
+            help=(
+                "No selected or loaded source is available to remove."
+                if upload is None and loaded is None
+                else f"Remove the current {label} source from this session."
+            ),
             width="stretch",
         ):
             _remove_file_source(state, dataset_name, mode=mode)
@@ -612,6 +622,11 @@ def render_upload_data(state: SessionState) -> None:
         "Reset Sources",
         key="reset_sources",
         disabled=not datasets and not any(uploads.values()),
+        help=(
+            "No selected or loaded sources are available to reset."
+            if not datasets and not any(uploads.values())
+            else "Remove all selected sources and downstream results from this session."
+        ),
         on_click=_reset_sources,
         args=(state,),
         width="stretch",

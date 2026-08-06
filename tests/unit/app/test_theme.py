@@ -48,6 +48,7 @@ def test_css_custom_properties_include_layout_and_typography_tokens() -> None:
     assert "--rf-layout-content-max-width: 1440px;" in css
     assert "--rf-layout-card-radius: 0.75rem;" in css
     assert "--rf-layout-control-radius: 0.5625rem;" in css
+    assert "--rf-layout-control-height: 2.75rem;" in css
     assert "--rf-type-font-family: ui-sans-serif" in css
     assert "--rf-color-primary-text: #172033;" in css
 
@@ -61,6 +62,10 @@ def test_global_css_is_local_organised_and_contains_semantic_classes() -> None:
     assert ".rf-alert--warning" in css
     assert ".rf-alert--error" in css
     assert ":focus-visible" in css
+    assert "@media (max-width: 1100px)" in css
+    assert '[data-testid="stDataFrame"]' in css
+    assert "overflow: auto" in css
+    assert "flex-wrap: wrap" in css
     assert "!important" not in css
     assert "http://" not in css
     assert "https://" not in css

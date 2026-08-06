@@ -77,12 +77,15 @@ def apply_chart_theme(figure: go.Figure) -> go.Figure:
             "color": colours.primary_text,
         },
         title={
-            "font": {"size": 18, "color": colours.primary_text},
+            "font": {"size": 17, "color": colours.primary_text},
             "x": 0,
             "xanchor": "left",
             "yanchor": "top",
+            "automargin": True,
+            "pad": {"b": 8},
         },
-        margin={"l": 56, "r": 24, "t": 64, "b": 48, "autoexpand": True},
+        autosize=True,
+        margin={"l": 48, "r": 16, "t": 60, "b": 48, "autoexpand": True},
         legend={
             "title": {"text": ""},
             "orientation": "h",
@@ -91,7 +94,8 @@ def apply_chart_theme(figure: go.Figure) -> go.Figure:
             "y": -0.18,
             "yanchor": "top",
             "bgcolor": "rgba(0,0,0,0)",
-            "font": {"size": 12, "color": colours.secondary_text},
+            "font": {"size": 11, "color": colours.secondary_text},
+            "itemwidth": 30,
         },
         hoverlabel={
             "bgcolor": colours.primary_text,

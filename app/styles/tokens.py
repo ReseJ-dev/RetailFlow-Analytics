@@ -52,7 +52,7 @@ class LayoutTokens:
     space_6: str = "1.5rem"
     space_8: str = "2rem"
     space_12: str = "3rem"
-    control_height: str = "2.625rem"
+    control_height: str = "2.75rem"
 
 
 @dataclass(frozen=True, slots=True)

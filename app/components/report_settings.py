@@ -228,6 +228,15 @@ def render_report_settings(
             key="generate_report_submit",
             type="primary",
             disabled=generation_in_progress or not logo_valid,
+            help=(
+                "Report generation is already in progress."
+                if generation_in_progress
+                else (
+                    "Remove or replace the invalid logo before generating the report."
+                    if not logo_valid
+                    else "Generate the configured Excel management report."
+                )
+            ),
             width="stretch",
         )
         if generation_in_progress:

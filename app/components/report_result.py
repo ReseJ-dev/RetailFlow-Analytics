@@ -87,6 +87,11 @@ def render_report_result(state: SessionState, result: ReportServiceResult) -> No
         file_name=result.report_path.name,
         mime=_EXCEL_MIME,
         disabled=report_bytes is None,
+        help=(
+            "The generated workbook is unavailable for download. Review the message above."
+            if report_bytes is None
+            else "Download the generated Excel management report."
+        ),
         width="stretch",
     )
     download_quality.download_button(
