@@ -85,5 +85,5 @@ def test_missing_report_file_preserves_metadata(tmp_path: Path) -> None:
     assert not report_is_available(refreshed)
     assert read_historical_report(refreshed) is None
     assert MISSING_REPORT_MESSAGE == (
-        "The report file is no longer available, but the run metadata is preserved."
+        "Run metadata is available, but the generated file can no longer be found."
     )
