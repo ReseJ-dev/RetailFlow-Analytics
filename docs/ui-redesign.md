@@ -1,5 +1,9 @@
 # RetailFlow Analytics UI Architecture Audit
 
+> **Historical document:** this file records the pre-redesign audit and its original
+> findings. For the implemented interface, use
+> [`ui-guide.md`](ui-guide.md) and the current project README.
+
 ## Scope and audit status
 
 This document records the Streamlit UI as it exists before a redesign. It proposes a

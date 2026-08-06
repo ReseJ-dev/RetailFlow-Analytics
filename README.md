@@ -7,9 +7,9 @@ validated Excel management report. It replaces a repetitive manual reporting
 process: a user can load business files, review data-quality problems, analyse
 performance in a Streamlit dashboard and generate a traceable management workbook.
 
-> **Dashboard screenshot placeholder:** `screenshots/04_dashboard.png` has not been
-> captured yet. The repository currently keeps only `screenshots/.gitkeep`, so no
-> broken image is embedded here.
+> **Interface screenshot placeholder:** no PNG screenshots are currently committed.
+> The required Dashboard capture will live at `screenshots/04_dashboard.png`; it is
+> intentionally not embedded until that file exists.
 
 > **Status:** This is a working portfolio application intended for local and Docker
 > demonstrations. Its ingestion, validation, transformation, analytics, reporting,
@@ -32,6 +32,47 @@ rows and calculates sales, returns and inventory measures. The reviewed result f
 the interactive dashboard and a formatted Excel workbook, while SQLite retains a
 small metadata record for each report-generation attempt.
 
+## Product UI Overview
+
+The redesigned Streamlit workspace is an operational interface rather than a marketing
+landing page. One branded sidebar provides access to Overview, Upload Data, Data
+Quality, Dashboard, Generate Report, Run History and Settings. The active destination,
+reporting context and workflow readiness remain visible without replacing uploaded or
+processed session data.
+
+The interface uses a shared light theme, reusable status and empty-state components,
+responsive multi-column layouts and one Plotly presentation configuration. Statuses
+always include text in addition to colour. Wide validation and history tables retain
+horizontal scrolling instead of compressing traceability fields beyond readability.
+
+## Application Workflow
+
+1. **Overview** explains workspace readiness and opens the next valid workflow step.
+2. **Upload Data** collects Orders, Products, Inventory and Returns from CSV/XLSX or
+   the optional authenticated REST API. Monthly Targets is optional.
+3. **Data Quality** runs the central mapping, validation, cleaning and merge pipeline.
+   Blocking structural errors stop the workflow; warnings require explicit review.
+4. **Dashboard** applies one shared filter set to KPIs, charts, detail tables and
+   deterministic recommendations.
+5. **Generate Report** validates report settings, creates the existing Excel workbook
+   and records the generation attempt.
+6. **Run History** retains newest-first metadata for successful and failed attempts and
+   allows download while the generated workbook still exists.
+7. **Settings** explains effective configuration and supports validated browser-session
+   overrides only where the application already consumes them.
+
+## Redesigned Pages
+
+| Page | Current implemented purpose |
+| --- | --- |
+| Overview | Product home, workflow progress, operational readiness and latest-report actions |
+| Upload Data | Required/optional file cards, REST API connection, source status and validation readiness |
+| Data Quality | Rule-based score, issue categories, traceable issue filters, review decisions and error-report export |
+| Dashboard | Shared filters, eight KPI cards, responsive Plotly charts, detail tables and rule-based recommendations |
+| Generate Report | Report identity, branding, optional sections, output configuration, progress and verified downloads |
+| Run History | Searchable and filterable run metadata, lifecycle statuses, safe details and available report downloads |
+| Settings | General, reporting, validation, inventory, storage, API and implemented appearance settings |
+
 ## Key Features
 
 - CSV and XLSX ingestion from paths, byte streams and Streamlit uploads.
@@ -45,15 +86,19 @@ small metadata record for each report-generation attempt.
   comparisons.
 - Transparent, deterministic recommendations; no generative AI service is used.
 - Multi-sheet Excel management reports with tables, charts, formatting and metadata.
-- Streamlit pages for upload, quality review, dashboard, report generation and run
-  history.
+- Streamlit pages for overview, upload, quality review, dashboard, report generation,
+  run history and supported session settings.
 - Typer CLI for validation, report generation, configuration inspection and demo data.
 - SQLAlchemy run-history repository backed by SQLite by default.
 - Reproducible Docker and Docker Compose setup running as a non-root user.
 
-## Demo
+## Recommended Demo Scenario
 
-The quickest complete local demonstration uses deterministic clean data:
+The clearest portfolio walkthrough begins with deterministic clean data, generates one
+report, then repeats validation with intentionally invalid data. This demonstrates the
+successful management workflow before showing the application's safeguards.
+
+### Clean-data demo flow
 
 ```bash
 python -m retailflow generate-demo-data \
@@ -63,24 +108,75 @@ python -m retailflow generate-demo-data \
 make run
 ```
 
-Open <http://localhost:8501>, then follow **Upload Data → Data Quality → Dashboard →
-Generate Report**. To demonstrate error handling instead, regenerate the files with
-`--include-invalid-rows`, which intentionally introduces a small set of known data
-quality problems.
+Open <http://localhost:8501> and:
+
+1. On **Overview**, select **Start New Report**.
+2. On **Upload Data**, upload `orders.csv`, `products.xlsx`, `inventory.csv` and
+   `returns.xlsx` from `demo_data/`; add `monthly_targets.csv` as the optional target
+   source.
+3. Select **Validate Data** and review the score and issue categories on **Data
+   Quality**. Confirm any non-blocking warning decision shown by the generated data.
+4. Continue to **Dashboard**, review the unfiltered KPIs, then apply one country or
+   category filter and reset it.
+5. Open **Generate Report**, use the detected reporting period, keep Inventory,
+   Returns and Data Quality enabled, and generate the workbook.
+6. Download the workbook and open **Run History** to inspect the completed run.
+
+### Invalid-data demo flow
+
+Keep the clean files intact and create a separate ignored demonstration directory:
+
+```bash
+python -m retailflow generate-demo-data \
+  --output-directory tmp/demo_invalid \
+  --random-seed 42 \
+  --include-invalid-rows
+```
+
+Start a new report and upload the five files from `tmp/demo_invalid/`. Validation will
+surface the deliberately duplicated order, unknown relationships, invalid values and
+inventory reservation issue. Use the category and issue filters, inspect source-row
+details, record the required exclusion/review decisions and download the error report.
+The generated invalid fixtures exercise row-level handling; to demonstrate the separate
+structural guard, make a temporary copy of `orders.csv`, remove one required column such
+as `order_id`, upload that copy and validate again. The UI will prevent continuation
+until the structural source problem is corrected. Do not describe either flow as a
+successful report generation unless the displayed issues are resolved through the
+existing rules.
 
 ## Screenshots
 
-No screenshot files have been committed yet. These are the planned capture paths;
-each is deliberately shown as a placeholder rather than as a broken Markdown image.
+No screenshot files have been committed yet. The paths below are plain code references,
+not Markdown images, so they cannot render as broken links.
 
-| Expected path | Intended view | Current status |
+| Planned path | Exact capture state | Status |
 | --- | --- | --- |
-| `screenshots/01_overview.png` | Product overview | Placeholder — not captured |
-| `screenshots/02_upload.png` | File and API upload workflow | Placeholder — not captured |
-| `screenshots/03_data_quality.png` | Validation summary and issue review | Placeholder — not captured |
-| `screenshots/04_dashboard.png` | Filtered KPI dashboard | Placeholder — not captured |
-| `screenshots/05_excel_summary.png` | Excel executive summary | Placeholder — not captured |
-| `screenshots/06_inventory_report.png` | Excel inventory analysis | Placeholder — not captured |
+| `screenshots/01_overview.png` | Clean startup, no sources loaded, full workflow progress visible | Placeholder — not captured |
+| `screenshots/02_upload.png` | File mode with all four required clean sources and optional targets selected; readiness visible | Placeholder — not captured |
+| `screenshots/03_data_quality.png` | Invalid-data result with summary, issue categories and at least one traceable issue visible | Placeholder — not captured |
+| `screenshots/04_dashboard.png` | Clean-data full-period result with KPI row, filters and first chart row visible | Placeholder — not captured |
+| `screenshots/05_generate_report.png` | Validated clean result with report identity, included sections and generation summary visible | Placeholder — not captured |
+| `screenshots/06_run_history.png` | At least one completed run selected with metadata/file availability visible | Placeholder — not captured |
+| `screenshots/07_excel_executive_summary.png` | Generated workbook open on `01_Executive_Summary` at 100% zoom | Placeholder — not captured |
+| `screenshots/08_excel_inventory_analysis.png` | Same workbook open on `04_Inventory`, including status formatting and table headers | Placeholder — not captured |
+
+### Screenshot capture instructions
+
+1. Generate the clean and invalid fixtures using the commands in the recommended demo
+   scenario.
+2. Launch with `make run`, open <http://localhost:8501> and use a browser viewport near
+   1440 × 900 for the portfolio captures. Keep the sidebar expanded.
+3. Reproduce the exact state in the table above. Capture only the application window;
+   exclude browser profiles, local filesystem paths, tokens and unrelated desktop UI.
+4. Save PNG files using the exact lowercase filenames listed above. Before adding a
+   Markdown image, confirm the file exists under `screenshots/` and contains no
+   customer or secret data.
+5. For Excel captures, generate a clean report with Inventory enabled, open the named
+   worksheet in Excel or LibreOffice, use approximately 100% zoom and exclude local
+   path/title-bar details when practical.
+
+This environment does not include screenshot automation, and this documentation does
+not claim that any of the planned captures have been generated.
 
 ## System Architecture
 
@@ -101,6 +197,32 @@ The reusable application code lives in `src/retailflow`. Streamlit pages call se
 modules under `app/services`, while the CLI calls the same ingestion, processing,
 analytics, reporting and storage layers. The local FastAPI application in `mock_api`
 is a demonstration data source, not a second business pipeline.
+
+### Shared UI architecture
+
+The UI keeps presentation separate from business calculations:
+
+- `app/main.py` configures Streamlit once and dispatches the active `AppPage`.
+- `app/components/layout.py` owns the single sidebar, branding and navigation.
+- `app/components/ui.py` provides typed page headers, section headers, metric cards,
+  semantic badges/callouts, empty states, workflow progress and action bars.
+- Focused modules under `app/components/` render upload, quality, dashboard and report
+  views without recalculating business metrics.
+- `app/services/` adapts session state to the existing ingestion, pipeline, analytics,
+  reporting and storage APIs under `src/retailflow`.
+- `app/state.py` defines the canonical workflow/session keys; component modules do not
+  own business state.
+
+Theme tokens are defined in `app/styles/tokens.py`, composed and injected once by
+`app/styles/theme.py`, and implemented by the local `app/styles.css`. Supported native
+Streamlit theme values and chrome settings live in `.streamlit/config.toml`. Plotly
+font, colour, margin, hover and interaction settings are centralized in
+`app/styles/plotly_theme.py`; chart components use that shared configuration.
+
+See [`docs/ui-guide.md`](docs/ui-guide.md) for the page/component map, responsive
+behavior and UI-specific maintenance notes. The older
+[`docs/ui-redesign.md`](docs/ui-redesign.md) is retained as a historical pre-redesign
+audit rather than current architecture documentation.
 
 ## Data Pipeline
 
@@ -369,6 +491,11 @@ inventory thresholds, validation behavior, output naming, SQLite connection and
 file/API source selection. API connection variables are `RETAIL_API_URL` and
 `RETAIL_API_TOKEN`; a real token must never be placed in YAML or committed files.
 
+The CLI accepts YAML explicitly through `--config`. The Streamlit launch command does
+not implicitly load `config/config.yaml`; use environment variables for its startup
+configuration. Supported Settings-page changes are validated session overrides applied
+after startup and are not written back to YAML.
+
 ## Column Mapping
 
 Source headings are trimmed, lowercased, converted from spaces/hyphens to underscores
@@ -543,6 +670,23 @@ python -m mypy src app
 Coverage output is printed in the terminal and written to `coverage.xml`. The current
 configuration requires at least 85% line coverage.
 
+## Accessibility Notes
+
+- The committed Streamlit theme uses a light palette with tested WCAG AA contrast for
+  primary text and semantic success, warning, error and information surfaces.
+- Keyboard focus is visible on links, buttons, form controls, tabs and expanders.
+- Status badges and alerts contain explicit text and symbols; colour is supplementary.
+- Inputs use visible labels, disabled workflow actions provide explanatory help, and
+  empty states describe the next available action.
+- Plotly charts have non-empty titles, labelled axes and business-readable hover text.
+  The corresponding dashboard tables provide a non-chart route to important detailed
+  values.
+- Wide data and issue tables preserve readable columns with native horizontal scrolling.
+
+These measures improve practical accessibility but are not a claim of formal WCAG
+certification. Keyboard and screen-reader behavior ultimately includes Streamlit and
+Plotly runtime behavior and should be retested when those dependencies are upgraded.
+
 ## CI
 
 No hosted CI workflow is committed at present. The repository is CI-ready at the
@@ -579,6 +723,24 @@ remote CI result.
 - Orders do not identify fulfilment warehouse, so per-warehouse sales velocity cannot
   be allocated from source evidence.
 - Screenshots and a publicly deployed demonstration are not yet included.
+
+## Known Streamlit UI Limitations
+
+- Streamlit reruns the page script after widget interaction. Uploaded and processed
+  data are preserved through the canonical session-state keys, but a server restart or
+  expired browser session clears non-persistent workflow state.
+- Settings applied in the UI are browser-session overrides; they are not written to
+  YAML. Environment, YAML and restart-required storage/API settings must be managed
+  outside the page.
+- Navigation is application-state based rather than URL-addressable routing, so browser
+  back/forward behavior is more limited than in a conventional multipage web framework.
+- Very wide issue, product and run-history tables use horizontal scrolling on narrow
+  windows. This intentionally preserves readable source traceability.
+- Plotly mode-bar and keyboard behavior are provided by Plotly. Export and useful
+  interactions remain available, but the charts are not substitutes for the adjacent
+  tabular detail.
+- The native Streamlit file uploader and date/select controls retain some browser and
+  Streamlit-specific presentation behavior.
 
 ## Roadmap
 
