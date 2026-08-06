@@ -5,6 +5,7 @@ from app.components.layout import (
     NavigationItem,
     render_navigation_item,
 )
+from app.pages import run_history
 from app.state import AppPage, StateKey, initialize_state
 from streamlit.testing.v1 import AppTest
 
@@ -95,11 +96,29 @@ def test_app_shell_has_one_button_navigation_and_preserves_state_on_rerun() -> N
     assert not app.exception
     assert app.title[0].value == AppPage.UPLOAD_DATA.value
     assert app.session_state[StateKey.CURRENT_PAGE.value] is AppPage.UPLOAD_DATA
-    assert app.session_state[StateKey.REPORT_SETTINGS.value] == {
-        "company_name": "Northstar"
-    }
+    assert app.session_state[StateKey.REPORT_SETTINGS.value] == {"company_name": "Northstar"}
 
     refreshed = app.run()
     assert not refreshed.exception
     assert refreshed.title[0].value == AppPage.UPLOAD_DATA.value
     assert refreshed.session_state[StateKey.CURRENT_PAGE.value] is AppPage.UPLOAD_DATA
+
+
+def test_every_registered_destination_resolves_through_the_application_router(
+    monkeypatch,
+) -> None:
+    class EmptyRunRepository:
+        def list_runs(self, **kwargs):
+            del kwargs
+            return ()
+
+    monkeypatch.setattr(run_history, "get_run_repository", EmptyRunRepository)
+    app = AppTest.from_file("app/main.py", default_timeout=15).run()
+
+    for page in AppPage:
+        app.session_state[StateKey.CURRENT_PAGE.value] = page
+        app = app.run()
+
+        assert not app.exception
+        assert app.title[0].value == page.value
+        assert app.session_state[StateKey.CURRENT_PAGE.value] is page

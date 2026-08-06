@@ -46,9 +46,7 @@ def test_successful_page_rerun_does_not_generate_a_duplicate_report(
     monkeypatch.setattr(report_service, "get_run_repository", lambda: repository)
     ready_state = _ready_state()
     output_directory = tmp_path / "reports"
-    ready_state[StateKey.REPORT_SETTINGS.value] = {
-        "generation": _request(output_directory)
-    }
+    ready_state[StateKey.REPORT_SETTINGS.value] = {"generation": _request(output_directory)}
     app = AppTest.from_file("app/main.py", default_timeout=30).run()
     for key, value in ready_state.items():
         app.session_state[key] = value
@@ -77,6 +75,11 @@ def test_successful_page_rerun_does_not_generate_a_duplicate_report(
     assert any(button.label == "View Run History" for button in app.button)
     assert any(button.label == "Generate Another Report" for button in app.button)
     assert not any(button.label == "Generate Excel Report" for button in app.button)
+    downloads = app.get("download_button")
+    excel_download = next(button for button in downloads if button.label == "Download Excel Report")
+    assert not excel_download.disabled
+    assert excel_download.proto.url.endswith(".xlsx")
+    assert (output_directory / "management_report.xlsx").read_bytes()
 
     app = app.run()
 

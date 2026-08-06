@@ -36,13 +36,9 @@ def test_dashboard_kpi_view_preserves_existing_values_and_adds_supported_metrics
         "return_rate_percent",
         "available_stock",
     )
-    assert all(
-        by_field[existing.field].value == existing.value for existing in result.kpi_cards
-    )
+    assert all(by_field[existing.field].value == existing.value for existing in result.kpi_cards)
     assert by_field["units_sold"].value == result.kpis.units_sold
-    assert by_field["available_stock"].value == result.inventory_metrics[
-        "available_stock"
-    ].sum()
+    assert by_field["available_stock"].value == result.inventory_metrics["available_stock"].sum()
 
 
 def test_filter_reset_restores_full_period_and_clears_all_dimensions() -> None:
@@ -54,9 +50,7 @@ def test_filter_reset_restores_full_period_and_clears_all_dimensions() -> None:
     _reset_widgets(state, options)
 
     assert state[_WIDGET_KEYS["dates"]] == (options.minimum_date, options.maximum_date)
-    assert all(
-        state[key] == [] for name, key in _WIDGET_KEYS.items() if name != "dates"
-    )
+    assert all(state[key] == [] for name, key in _WIDGET_KEYS.items() if name != "dates")
     assert state[StateKey.ACTIVE_FILTERS.value] == DashboardFilters()
 
 
@@ -106,3 +100,38 @@ def test_dashboard_page_renders_shared_filters_kpis_charts_and_recommendation_gr
     assert len(app.get("plotly_chart")) == 8
     assert any(tab.label.startswith("Critical (") for tab in app.tabs)
     assert any(button.label == "Reset Filters" for button in app.button)
+
+
+def test_dashboard_presentation_filter_preserves_matching_analytics_values() -> None:
+    processing = _processing_result()
+    app = AppTest.from_file("app/main.py", default_timeout=15).run()
+    app.session_state[StateKey.PROCESSING_RESULT.value] = processing
+    app.session_state[StateKey.CURRENT_PAGE.value] = AppPage.DASHBOARD
+    app = app.run()
+    original_values = {metric.label: metric.value for metric in app.metric}
+    supplier = next(control for control in app.multiselect if control.label == "Supplier")
+
+    app = supplier.select("Supplier A").run()
+
+    assert not app.exception
+    assert {metric.label: metric.value for metric in app.metric} == original_values
+    assert app.session_state[StateKey.PROCESSING_RESULT.value] is processing
+    filters = app.session_state[StateKey.ACTIVE_FILTERS.value]
+    assert filters.suppliers == ("Supplier A",)
+
+
+def test_empty_dashboard_result_renders_all_safe_chart_states() -> None:
+    processing = _processing_result()
+    processing.processed_orders.drop(processing.processed_orders.index, inplace=True)
+    app = AppTest.from_file("app/main.py", default_timeout=15).run()
+    app.session_state[StateKey.PROCESSING_RESULT.value] = processing
+    app.session_state[StateKey.CURRENT_PAGE.value] = AppPage.DASHBOARD
+
+    app = app.run()
+
+    assert not app.exception
+    assert (
+        next(metric for metric in app.metric if metric.label == "Net Revenue").value == "0.00 USD"
+    )
+    assert len(app.get("plotly_chart")) == 8
+    assert any("No completed orders match" in warning.value for warning in app.warning)

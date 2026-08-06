@@ -1,6 +1,7 @@
 import tomllib
 from pathlib import Path
 
+from app import main as application
 from app.styles.theme import apply_global_theme, build_global_css
 from app.styles.tokens import DESIGN_TOKENS, css_custom_properties
 
@@ -10,9 +11,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[3]
 def _relative_luminance(hex_colour: str) -> float:
     channels = [int(hex_colour[index : index + 2], 16) / 255 for index in (1, 3, 5)]
     linear = [
-        channel / 12.92
-        if channel <= 0.04045
-        else ((channel + 0.055) / 1.055) ** 2.4
+        channel / 12.92 if channel <= 0.04045 else ((channel + 0.055) / 1.055) ** 2.4
         for channel in channels
     ]
     return 0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2]
@@ -56,8 +55,8 @@ def test_css_custom_properties_include_layout_and_typography_tokens() -> None:
 def test_global_css_is_local_organised_and_contains_semantic_classes() -> None:
     css = build_global_css()
 
-    assert "[data-testid=\"stAppViewContainer\"]" in css
-    assert "[data-testid=\"stFileUploader\"]" in css
+    assert '[data-testid="stAppViewContainer"]' in css
+    assert '[data-testid="stFileUploader"]' in css
     assert ".rf-alert--success" in css
     assert ".rf-alert--warning" in css
     assert ".rf-alert--error" in css
@@ -92,6 +91,17 @@ def test_theme_injection_writes_one_trusted_style_block(monkeypatch) -> None:
     assert calls[0][0].startswith("<style>:root {")
     assert calls[0][0].endswith("</style>")
     assert calls[0][1] is True
+
+
+def test_application_initialises_the_shared_theme_once(monkeypatch) -> None:
+    loaded_stylesheets: list[Path] = []
+    monkeypatch.setattr(application.st, "set_page_config", lambda **kwargs: None)
+    monkeypatch.setattr(application, "load_local_css", loaded_stylesheets.append)
+    monkeypatch.setattr(application, "_render_application", lambda: None)
+
+    application.main()
+
+    assert loaded_stylesheets == [Path(application.__file__).with_name("styles.css")]
 
 
 def test_streamlit_theme_uses_tokens_and_supported_shell_configuration() -> None:
